@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>HomeMark</title>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <meta name="description" content="">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+  <link rel="stylesheet" type="text/css" href="css/vendor.css">
+  <link rel="stylesheet" type="text/css" href="css/style.css">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+</head>
+
+<body>
+
+  <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <defs>
+      <symbol xmlns="http://www.w3.org/2000/svg" id="link" viewBox="0 0 24 24">
+        <path fill="currentColor"
+          d="M12 19a1 1 0 1 0-1-1a1 1 0 0 0 1 1Zm5 0a1 1 0 1 0-1-1a1 1 0 0 0 1 1Zm0-4a1 1 0 1 0-1-1a1 1 0 0 0 1 1Zm-5 0a1 1 0 1 0-1-1a1 1 0 0 0 1 1Zm7-12h-1V2a1 1 0 0 0-2 0v1H8V2a1 1 0 0 0-2 0v1H5a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3Zm1 17a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9h16Zm0-11H4V6a1 1 0 0 1 1-1h1v1a1 1 0 0 0 2 0V5h8v1a1 1 0 0 0 2 0V5h1a1 1 0 0 1 1 1ZM7 15a1 1 0 1 0-1-1a1 1 0 0 0 1 1Zm0 4a1 1 0 1 0-1-1a1 1 0 0 0 1 1Z" />
+      </symbol>
+      <symbol xmlns="http://www.w3.org/2000/svg" id="arrow-right" viewBox="0 0 24 24">
+        <path fill="currentColor"
+          d="M17.92 11.62a1 1 0 0 0-.21-.33l-5-5a1 1 0 0 0-1.42 1.42l3.3 3.29H7a1 1 0 0 0 0 2h7.59l-3.3 3.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0l5-5a1 1 0 0 0 .21-.33a1 1 0 0 0 0-.76Z" />
+      </symbol>
+      <symbol xmlns="http://www.w3.org/2000/svg" id="category" viewBox="0 0 24 24">
+        <path fill="currentColor"
+          d="M19 5.5h-6.28l-.32-1a3 3 0 0 0-2.84-2H5a3 3 0 0 0-3 3v13a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-10a3 3 0 0 0-3-3Zm1 13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1h4.56a1 1 0 0 1 .95.68l.54 1.64a1 1 0 0 0 .95.68h7a1 1 0 0 1 1 1Z" />
+      </symbol>
+      <symbol xmlns="http://www.w3.org/2000/svg" id="calendar" viewBox="0 0 24 24">
+        <path fill="currentColor"
+          d="M19 4h-2V3a1 1 0 0 0-2 0v1H9V3a1 1 0 0 0-2 0v1H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3Zm1 15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-7h16Zm0-9H4V7a1 1 0 0 1 1-1h2v1a1 1 0 0 0 2 0V6h6v1a1 1 0 0 0 2 0V6h2a1 1 0 0 1 1 1Z" />
+      </symbol>
+      <symbol xmlns="http://www.w3.org/2000/svg" id="heart" viewBox="0 0 24 24">
+        <path fill="currentColor"
+          d="M20.16 4.61A6.27 6.27 0 0 0 12 4a6.27 6.27 0 0 0-8.16 9.48l7.45 7.45a1 1 0 0 0 1.42 0l7.45-7.45a6.27 6.27 0 0 0 0-8.87Zm-1.41 7.46L12 18.81l-6.75-6.74a4.28 4.28 0 0 1 3-7.3a4.25 4.25 0 0 1 3 1.25a1 1 0 0 0 1.42 0a4.27 4.27 0 0 1 6 6.05Z" />
+      </symbol>
+      <symbol xmlns="http://www.w3.org/2000/svg" id="plus" viewBox="0 0 24 24">
+        <path fill="currentColor"
+          d="M19 11h-6V5a1 1 0 0 0-2 0v6H5a1 1 0 0 0 0 2h6v6a1 1 0 0 0 2 0v-6h6a1 1 0 0 0 0-2Z" />
+      </symbol>
+      <symbol xmlns="http://www.w3.org/2000/svg" id="minus" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M19 11H5a1 1 0 0 0 0 2h14a1 1 0 0 0 0-2Z" />
+      </symbol>
+      <symbol xmlns="http://www.w3.org/2000/svg" id="cart" viewBox="0 0 24 24">
+        <path fill="currentColor"
+          d="M8.5 19a1.5 1.5 0 1 0 1.5 1.5A1.5 1.5 0 0 0 8.5 19ZM19 16H7a1 1 0 0 1 0-2h8.491a3.013 3.013 0 0 0 2.885-2.176l1.585-5.55A1 1 0 0 0 19 5H6.74a3.007 3.007 0 0 0-2.82-2H3a1 1 0 0 0 0 2h.921a1.005 1.005 0 0 1 .962.725l.155.545v.005l1.641 5.742A3 3 0 0 0 7 18h12a1 1 0 0 0 0-2Zm-1.326-9l-1.22 4.274a1.005 1.005 0 0 1-.963.726H8.754l-.255-.892L7.326 7ZM16.5 19a1.5 1.5 0 1 0 1.5 1.5a1.5 1.5 0 0 0-1.5-1.5Z" />
+      </symbol>
+      <symbol xmlns="http://www.w3.org/2000/svg" id="check" viewBox="0 0 24 24">
+        <path fill="currentColor"
+          d="M18.71 7.21a1 1 0 0 0-1.42 0l-7.45 7.46l-3.13-3.14A1 1 0 1 0 5.29 13l3.84 3.84a1 1 0 0 0 1.42 0l8.16-8.16a1 1 0 0 0 0-1.47Z" />
+      </symbol>
+      <symbol xmlns="http://www.w3.org/2000/svg" id="trash" viewBox="0 0 24 24">
+        <path fill="currentColor"
+          d="M10 18a1 1 0 0 0 1-1v-6a1 1 0 0 0-2 0v6a1 1 0 0 0 1 1ZM20 6h-4V5a3 3 0 0 0-3-3h-2a3 3 0 0 0-3 3v1H4a1 1 0 0 0 0 2h1v11a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3V8h1a1 1 0 0 0 0-2ZM10 5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1h-4Zm7 14a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V8h10Zm-3-1a1 1 0 0 0 1-1v-6a1 1 0 0 0-2 0v6a1 1 0 0 0 1 1Z" />
+      </symbol>
+      <symbol xmlns="http://www.w3.org/2000/svg" id="star-outline" viewBox="0 0 15 15">
+        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+          d="M7.5 9.804L5.337 11l.413-2.533L4 6.674l2.418-.37L7.5 4l1.082 2.304l2.418.37l-1.75 1.793L9.663 11L7.5 9.804Z" />
+      </symbol>
+      <symbol xmlns="http://www.w3.org/2000/svg" id="star-solid" viewBox="0 0 15 15">
+        <path fill="currentColor"
+          d="M7.953 3.788a.5.5 0 0 0-.906 0L6.08 5.85l-2.154.33a.5.5 0 0 0-.283.843l1.574 1.613l-.373 2.284a.5.5 0 0 0 .736.518l1.92-1.063l1.921 1.063a.5.5 0 0 0 .736-.519l-.373-2.283l1.574-1.613a.5.5 0 0 0-.283-.844L8.921 5.85l-.968-2.062Z" />
+      </symbol>
+      <symbol xmlns="http://www.w3.org/2000/svg" id="search" viewBox="0 0 24 24">
+        <path fill="currentColor"
+          d="M21.71 20.29L18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.39ZM11 18a7 7 0 1 1 7-7a7 7 0 0 1-7 7Z" />
+      </symbol>
+      <symbol xmlns="http://www.w3.org/2000/svg" id="user" viewBox="0 0 24 24">
+        <path fill="currentColor"
+          d="M15.71 12.71a6 6 0 1 0-7.42 0a10 10 0 0 0-6.22 8.18a1 1 0 0 0 2 .22a8 8 0 0 1 15.9 0a1 1 0 0 0 1 .89h.11a1 1 0 0 0 .88-1.1a10 10 0 0 0-6.25-8.19ZM12 12a4 4 0 1 1 4-4a4 4 0 0 1-4 4Z" />
+      </symbol>
+      <symbol xmlns="http://www.w3.org/2000/svg" id="close" viewBox="0 0 15 15">
+        <path fill="currentColor"
+          d="M7.953 3.788a.5.5 0 0 0-.906 0L6.08 5.85l-2.154.33a.5.5 0 0 0-.283.843l1.574 1.613l-.373 2.284a.5.5 0 0 0 .736.518l1.92-1.063l1.921 1.063a.5.5 0 0 0 .736-.519l-.373-2.283l1.574-1.613a.5.5 0 0 0-.283-.844L8.921 5.85l-.968-2.062Z" />
+      </symbol>
+    </defs>
+  </svg>
+
+  <div class="preloader-wrapper">
+    <div class="preloader">
+    </div>
+  </div>
+
+  <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasCart" aria-labelledby="My Cart">
+    <div class="offcanvas-header justify-content-center">
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+
+    <div class="offcanvas-body">
+      <div class="order-md-last">
+
+        <h4 class="d-flex justify-content-between align-items-center mb-3">
+          <span class="text-primary">Carrinho</span>
+          <span class="badge bg-primary rounded-pill">3</span>
+        </h4>
+
+        <ul class="list-group mb-3">
+
+          <li class="list-group-item d-flex justify-content-between lh-sm">
+            <div>
+              <h6 class="my-0">Portátil Lenovo IdeaPad 3</h6>
+              <small class="text-body-secondary">Ryzen 5 • 8GB RAM • 512GB SSD</small>
+            </div>
+            <span class="text-body-secondary">599€</span>
+          </li>
+
+          <li class="list-group-item d-flex justify-content-between lh-sm">
+            <div>
+              <h6 class="my-0">Smartphone Samsung Galaxy A54</h6>
+              <small class="text-body-secondary">128GB • 5G • Dual SIM</small>
+            </div>
+            <span class="text-body-secondary">379€</span>
+          </li>
+
+          <li class="list-group-item d-flex justify-content-between lh-sm">
+            <div>
+              <h6 class="my-0">Headphones Bluetooth Sony WH-CH520</h6>
+              <small class="text-body-secondary">Wireless • Autonomia 50h</small>
+            </div>
+            <span class="text-body-secondary">49€</span>
+          </li>
+
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Total</span>
+            <strong>1 027€</strong>
+          </li>
+
+        </ul>
+
+        <div class="card mb-3 border-success">
+          <div class="card-body">
+            <h6 class="card-title text-success">Melhor opção</h6>
+            <p class="mb-1"><strong>Worten</strong></p>
+            <p class="mb-0 text-success">Total: 1 027€</p>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <small class="text-muted">Outras lojas:</small>
+          <ul class="list-group mt-2">
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Fnac</span>
+              <span>1 050€</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between">
+              <span>Amazon</span>
+              <span>1 045€</span>
+            </li>
+          </ul>
+        </div>
+
+        <button class="w-100 btn btn-success btn-lg">
+          Ir para a melhor loja (Worten)
+        </button>
+
+        <div class="d-grid gap-2 mt-2">
+          <button class="btn btn-outline-secondary btn-sm">
+            Ver na Fnac
+          </button>
+          <button class="btn btn-outline-secondary btn-sm">
+            Ver na Amazon
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasSearch"
+    aria-labelledby="Search">
+    <div class="offcanvas-header justify-content-center">
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <div class="order-md-last">
+        <h4 class="d-flex justify-content-between align-items-center mb-3">
+          <span class="text-primary">Search</span>
+        </h4>
+        <form role="search" action="index.html" method="get" class="d-flex mt-3 gap-0">
+          <input class="form-control rounded-start rounded-0 bg-light" type="email"
+            placeholder="What are you looking for?" aria-label="What are you looking for?">
+          <button class="btn btn-dark rounded-end rounded-0" type="submit">Search</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <header>
+    <div class="container-fluid">
+      <div class="row py-3 border-bottom">
+
+        <div class="col-sm-4 col-lg-3 text-center text-sm-start">
+          <div class="main-logo">
+            <a href="index.html">
+              <img src="images/logo3.png" alt="logo" class="img-fluid">
+            </a>
+          </div>
+        </div>
+
+        <div class="col-sm-6 offset-sm-2 offset-md-0 col-lg-5 d-none d-lg-block">
+          <div class="search-bar bg-light p-2 my-2 rounded-4 d-flex align-items-center gap-2">
+            <form id="search-form" class="flex-grow-1 m-0" action="index.html" method="post">
+              <input type="text" class="form-control border-0 bg-transparent"
+                placeholder="Pesquisa mais de 20,000 produtos" />
+            </form>
+
+            <span class="d-flex align-items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                <path fill="currentColor"
+                  d="M21.71 20.29L18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.39ZM11 18a7 7 0 1 1 7-7a7 7 0 0 1-7 7Z" />
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <div
+          class="col-sm-8 col-lg-4 d-flex justify-content-end gap-5 align-items-center mt-4 mt-sm-0 justify-content-center justify-content-sm-end">
+          <div class="support-box text-end d-none d-xl-block">
+            <span class="fs-6 text-muted">Suporte?</span>
+            <h5 class="mb-0">+351 - 916 788 652</h5>
+          </div>
+
+          <ul class="d-flex justify-content-end list-unstyled m-0">
+            <li>
+              <a href="profile.html" class="rounded-circle bg-light p-2 mx-1">
+                <svg width="24" height="24" viewBox="0 0 24 24">
+                  <use xlink:href="#user"></use>
+                </svg>
+              </a>
+            </li>
+            <li>
+              <a href="#" class="rounded-circle bg-light p-2 mx-1">
+                <svg width="24" height="24" viewBox="0 0 24 24">
+                  <use xlink:href="#heart"></use>
+                </svg>
+              </a>
+            </li>
+            <li class="d-lg-none">
+              <a href="#" class="rounded-circle bg-light p-2 mx-1" data-bs-toggle="offcanvas"
+                data-bs-target="#offcanvasCart" aria-controls="offcanvasCart">
+                <svg width="24" height="24" viewBox="0 0 24 24">
+                  <use xlink:href="#cart"></use>
+                </svg>
+              </a>
+            </li>
+            <li class="d-lg-none">
+              <a href="#" class="rounded-circle bg-light p-2 mx-1" data-bs-toggle="offcanvas"
+                data-bs-target="#offcanvasSearch" aria-controls="offcanvasSearch">
+                <svg width="24" height="24" viewBox="0 0 24 24">
+                  <use xlink:href="#search"></use>
+                </svg>
+              </a>
+            </li>
+          </ul>
+
+          <div class="cart text-end d-none d-lg-block dropdown">
+            <button class="border-0 bg-transparent d-flex flex-column gap-2 lh-1" type="button"
+              data-bs-toggle="offcanvas" data-bs-target="#offcanvasCart" aria-controls="offcanvasCart">
+              <span class="fs-6 text-muted dropdown-toggle">Carrinho</span>
+              <span class="cart-total fs-5 fw-bold">$1290.00</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="container-fluid">
+      <div class="row py-3">
+        <div class="d-flex  justify-content-center justify-content-sm-between align-items-center">
+          <nav class="main-menu d-flex navbar navbar-expand-lg">
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar"
+              aria-controls="offcanvasNavbar">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar"
+              aria-labelledby="offcanvasNavbarLabel">
+
+              <div class="offcanvas-header justify-content-center">
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+              </div>
+
+              <div class="offcanvas-body">
+                <ul class="navbar-nav justify-content-end menu-list list-unstyled d-flex gap-md-3 mb-0">
+
+                  <!-- Todos -->
+                  <li class="nav-item">
+                    <a class="nav-link" href="produtos.html">
+                      Todos os Produtos
+                    </a>
+                  </li>
+
+                  <!-- Eletrodomésticos -->
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" role="button" id="Eletrodomesticos" data-bs-toggle="dropdown"
+                      aria-expanded="false">
+                      Eletrodomésticos
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="Eletrodomesticos">
+                      <li><a href="index.html" class="dropdown-item">Todos</a></li>
+                      <li><a href="index.html" class="dropdown-item">Cozinha</a></li>
+                      <li><a href="index.html" class="dropdown-item">Lavandaria</a></li>
+                      <li><a href="index.html" class="dropdown-item">Limpeza</a></li>
+                      <li><a href="index.html" class="dropdown-item">Climatização</a></li>
+                      <li><a href="index.html" class="dropdown-item">Cuidado pessoal</a></li>
+                    </ul>
+                  </li>
+
+                  <!-- Informática -->
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" role="button" id="Informatica" data-bs-toggle="dropdown"
+                      aria-expanded="false">
+                      Informática
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="Informatica">
+                      <li><a href="index.html" class="dropdown-item">Todos</a></li>
+                      <li><a href="index.html" class="dropdown-item">Portáteis</a></li>
+                      <li><a href="index.html" class="dropdown-item">Computadores fixos</a></li>
+                      <li><a href="index.html" class="dropdown-item">Monitores</a></li>
+                      <li><a href="index.html" class="dropdown-item">Impressoras</a></li>
+                      <li><a href="index.html" class="dropdown-item">Periféricos</a></li>
+                    </ul>
+                  </li>
+
+                  <!-- Smartphones e Acessórios -->
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" role="button" id="SmartphoneseAcessorios"
+                      data-bs-toggle="dropdown" aria-expanded="false">
+                      Smartphones e Acessórios
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="SmartphoneseAcessorios">
+                      <li><a href="index.html" class="dropdown-item">Todos</a></li>
+                      <li><a href="index.html" class="dropdown-item">Smartphones</a></li>
+                      <li><a href="index.html" class="dropdown-item">Capas e películas</a></li>
+                      <li><a href="index.html" class="dropdown-item">Carregadores e cabos</a></li>
+                      <li><a href="index.html" class="dropdown-item">Powerbanks</a></li>
+                      <li><a href="index.html" class="dropdown-item">Wearables</a></li>
+                    </ul>
+                  </li>
+
+                  <!-- Imagem e Som -->
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" role="button" id="ImagemeSom" data-bs-toggle="dropdown"
+                      aria-expanded="false">
+                      Imagem e Som
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="ImagemeSom">
+                      <li><a href="index.html" class="dropdown-item">Todos</a></li>
+                      <li><a href="index.html" class="dropdown-item">TVs</a></li>
+                      <li><a href="index.html" class="dropdown-item">Barras de som</a></li>
+                      <li><a href="index.html" class="dropdown-item">Colunas</a></li>
+                      <li><a href="index.html" class="dropdown-item">Auscultadores</a></li>
+                      <li><a href="index.html" class="dropdown-item">Projetores</a></li>
+                    </ul>
+                  </li>
+
+                  <!-- Gaming -->
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" role="button" id="Gaming" data-bs-toggle="dropdown"
+                      aria-expanded="false">
+                      Gaming
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="Gaming">
+                      <li><a href="index.html" class="dropdown-item">Todos</a></li>
+                      <li><a href="index.html" class="dropdown-item">Consolas</a></li>
+                      <li><a href="index.html" class="dropdown-item">Jogos</a></li>
+                      <li><a href="index.html" class="dropdown-item">Comandos</a></li>
+                      <li><a href="index.html" class="dropdown-item">Headsets</a></li>
+                      <li><a href="index.html" class="dropdown-item">Cadeiras e secretárias</a></li>
+                    </ul>
+                  </li>
+
+                  <!-- Outros -->
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" role="button" id="Outros" data-bs-toggle="dropdown"
+                      aria-expanded="false">
+                      Outros
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="Outros">
+                      <li><a href="index.html" class="dropdown-item">Todos</a></li>
+                      <li><a href="index.html" class="dropdown-item">naosei</a></li>
+                      <li><a href="index.html" class="dropdown-item">naosei</a></li>
+                      <li><a href="index.html" class="dropdown-item">naosei</a></li>
+                      <li><a href="index.html" class="dropdown-item">naosei</a></li>
+                      <li><a href="index.html" class="dropdown-item">naosei</a></li>
+                    </ul>
+                  </li>
+
+                </ul>
+              </div>
+
+            </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="py-3">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-12">
+
+          <div class="banner-blocks">
+
+            <div class="banner-ad large bg-info block-1">
+
+              <div class="swiper main-swiper">
+                <div class="swiper-wrapper">
+
+                  <div class="swiper-slide block-4">
+                    <div class="row banner-content p-5">
+                      <div class="content-wrapper col-md-7">
+                        <div class="categories my-3">Promoções da semana</div>
+                        <h3 class="display-4">Confira os produtos com maior desconto da Worten</h3>
+                        <p>Aproveite as melhores ofertas em gadgets, acessórios e eletrónica com descontos imperdíveis
+                          esta semana!</p>
+                        <a href="https://www.worten.pt/promocoes"
+                          class="btn btn-outline-dark btn-lg text-uppercase fs-6 rounded-1 px-4 py-3 mt-3">Compra já</a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="swiper-slide block-5">
+                    <div class="row banner-content p-5">
+                      <div class="content-wrapper col-md-7">
+                        <div class="categories my-3">Promoções da semana</div>
+                        <h3 class="banner-title">Confira os produtos com maior desconto da Fnac</h3>
+                        <p>Aproveite as melhores ofertas em gadgets, acessórios e eletrónica com descontos imperdíveis
+                          esta semana!</p>
+                        <a href="https://www.fnac.pt/Oportunidades-FNAC/s14#bl=marktlink1"
+                          class="btn btn-outline-dark btn-lg text-uppercase fs-6 rounded-1 px-4 py-3 mt-3">Compra já</a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="swiper-slide block-6">
+                    <div class="row banner-content p-5">
+                      <div class="content-wrapper col-md-7">
+                        <div class="categories my-3">Promoções da semana</div>
+                        <h3 class="banner-title">Confira os produtos com maior desconto da Rádio Popular</h3>
+                        <p>Aproveite as melhores ofertas em gadgets, acessórios e eletrónica com descontos imperdíveis
+                          esta semana!</p>
+                        <a href="https://www.radiopopular.pt/"
+                          class="btn btn-outline-dark btn-lg text-uppercase fs-6 rounded-1 px-4 py-3 mt-3">Compra já</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="swiper-pagination"></div>
+
+              </div>
+            </div>
+
+            <div class="banner-ad bg-success-subtle block-2">
+              <div class="row banner-content p-5">
+                <div class="content-wrapper col-md-7">
+                  <div class="categories sale mb-3 pb-3">Novos produtos</div>
+                  <h3 class="banner-title">Tecnologia para Você</h3>
+                  <a href="#" class="d-flex align-items-center nav-link">
+                    Veja ofertas aqui
+                    <svg width="24" height="24">
+                      <use xlink:href="#arrow-right"></use>
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div class="banner-ad bg-danger block-3">
+              <div class="row banner-content p-5">
+                <div class="content-wrapper col-md-7">
+                  <div class="categories sale mb-3 pb-3">Dia do Pai</div>
+                  <h3 class="item-title">Presentes para o Pai</h3>
+                  <a href="#" class="d-flex align-items-center nav-link">
+                    Veja ofertas aqui
+                    <svg width="24" height="24">
+                      <use xlink:href="#arrow-right"></use>
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <!-- / Banner Blocks -->
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="latest-blog" class="py-5">
+    <div class="container-fluid">
+
+      <div class="row">
+        <div class="section-header d-flex align-items-center justify-content-between my-5">
+          <h2 class="section-title">Eventos de lojas parceiras</h2>
+          <div class="btn-wrap align-right">
+            <a href="#" class="d-flex align-items-center nav-link">
+              Ver todos
+              <svg width="24" height="24">
+                <use xlink:href="#arrow-right"></use>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+
+        <!-- Worten -->
+        <div class="col-md-3">
+          <article class="post-item card border-0 shadow-sm p-3">
+            <div class="image-holder zoom-effect">
+              <a href="#">
+                <img src="images/worten1.png" class="card-img-top" alt="Worten">
+              </a>
+            </div>
+            <div class="card-body">
+              <div class="post-meta d-flex text-uppercase gap-3 my-2 align-items-center">
+                <div class="meta-categories">Worten</div>
+              </div>
+              <div class="post-header">
+                <h3 class="post-title">
+                  <a href="#" class="text-decoration-none">Worten Resolve</a>
+                </h3>
+                <p>Serviços rápidos e assistência técnica para os teus equipamentos.</p>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Fnac Flash Sales -->
+        <div class="col-md-3">
+          <article class="post-item card border-0 shadow-sm p-3">
+            <div class="image-holder zoom-effect">
+              <a href="#">
+                <img src="images/fnac1.png" class="card-img-top" alt="Fnac">
+              </a>
+            </div>
+            <div class="card-body">
+              <div class="post-meta d-flex text-uppercase gap-3 my-2 align-items-center">
+                <div class="meta-categories">Fnac</div>
+              </div>
+              <div class="post-header">
+                <h3 class="post-title">
+                  <a href="#" class="text-decoration-none">Flash Sales</a>
+                </h3>
+                <p>Descontos exclusivos em tecnologia, livros e entretenimento.</p>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Fnac Tech Days -->
+        <div class="col-md-3">
+          <article class="post-item card border-0 shadow-sm p-3">
+            <div class="image-holder zoom-effect">
+              <a href="#">
+                <img src="images/fnac2.png" class="card-img-top" alt="Fnac">
+              </a>
+            </div>
+            <div class="card-body">
+              <div class="post-meta d-flex text-uppercase gap-3 my-2 align-items-center">
+                <div class="meta-categories">Fnac</div>
+              </div>
+              <div class="post-header">
+                <h3 class="post-title">
+                  <a href="#" class="text-decoration-none">Tech Days</a>
+                </h3>
+                <p>Os melhores preços em tecnologia durante tempo limitado.</p>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Rádio Popular -->
+        <div class="col-md-3">
+          <article class="post-item card border-0 shadow-sm p-3">
+            <div class="image-holder zoom-effect">
+              <a href="#">
+                <img src="images/radiopopula.png" class="card-img-top" alt="Rádio Popular">
+              </a>
+            </div>
+            <div class="card-body">
+              <div class="post-meta d-flex text-uppercase gap-3 my-2 align-items-center">
+                <div class="meta-categories">Rádio Popular</div>
+              </div>
+              <div class="post-header">
+                <h3 class="post-title">
+                  <a href="#" class="text-decoration-none">Preços de Loucura</a>
+                </h3>
+                <p>Promoções imperdíveis em eletrodomésticos e eletrónica.</p>
+              </div>
+            </div>
+          </article>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="py-5">
+    <div class="container-fluid">
+
+      <div class="bg-secondary py-5 my-5 rounded-5"
+        style="background: url('images/bg-leaves-img-pattern.png') no-repeat;">
+
+        <div class="container my-5">
+          <div class="row">
+
+            <!-- Texto -->
+            <div class="col-md-6 p-5">
+              <div class="section-header">
+                <h2 class="section-title display-4">
+                  Poupa até <span class="text-primary">25% em eletrodomésticos</span>
+                </h2>
+              </div>
+              <p>
+                Aproveita as melhores promoções em tecnologia para casa: frigoríficos, máquinas de lavar,
+                aspiradores e muito mais. Subscreve e recebe ofertas exclusivas diretamente no teu email.
+              </p>
+            </div>
+
+            <!-- Formulário -->
+            <div class="col-md-6 p-5">
+              <form>
+
+                <div class="mb-3">
+                  <label for="name" class="form-label">Nome</label>
+                  <input type="text" class="form-control form-control-lg" id="name" placeholder="O teu nome">
+                </div>
+
+                <div class="mb-3">
+                  <label for="email" class="form-label">Email</label>
+                  <input type="email" class="form-control form-control-lg" id="email" placeholder="exemplo@email.com">
+                </div>
+
+                <div class="form-check form-check-inline mb-3">
+                  <input class="form-check-input" type="checkbox" id="subscribe">
+                  <label class="form-check-label" for="subscribe">
+                    Quero receber promoções e novidades
+                  </label>
+                </div>
+
+                <div class="d-grid gap-2">
+                  <button type="submit" class="btn btn-dark btn-lg">
+                    Receber desconto
+                  </button>
+                </div>
+
+              </form>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+
+
+  <footer class="py-5">
+    <div class="container-fluid">
+      <div class="row">
+
+        <!-- Logo + redes -->
+        <div class="col-lg-3 col-md-6 col-sm-6">
+          <div class="footer-menu">
+            <img src="images/logo3.png" alt="logo" class="img-fluid">
+            <p class="mt-3">
+              A tua loja de eletrodomésticos com as melhores ofertas e parcerias em Portugal.
+            </p>
+
+            <div class="social-links mt-4">
+              <ul class="d-flex list-unstyled gap-2">
+                <li><a href="#" class="btn btn-outline-light">FB</a></li>
+                <li><a href="#" class="btn btn-outline-light">IG</a></li>
+                <li><a href="#" class="btn btn-outline-light">YT</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sobre -->
+        <div class="col-md-2 col-sm-6">
+          <div class="footer-menu">
+            <h5 class="widget-title">Sobre</h5>
+            <ul class="menu-list list-unstyled">
+              <li><a href="#" class="nav-link">Sobre nós</a></li>
+              <li><a href="#" class="nav-link">Condições</a></li>
+              <li><a href="#" class="nav-link">Trabalhar connosco</a></li>
+              <li><a href="#" class="nav-link">Parcerias</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Apoio ao cliente -->
+        <div class="col-md-2 col-sm-6">
+          <div class="footer-menu">
+            <h5 class="widget-title">Apoio ao Cliente</h5>
+            <ul class="menu-list list-unstyled">
+              <li><a href="#" class="nav-link">FAQ</a></li>
+              <li><a href="#" class="nav-link">Contactos</a></li>
+              <li><a href="#" class="nav-link">Política de Privacidade</a></li>
+              <li><a href="#" class="nav-link">Devoluções</a></li>
+              <li><a href="#" class="nav-link">Entregas</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Parcerias -->
+        <div class="col-md-2 col-sm-6">
+          <div class="footer-menu">
+            <h5 class="widget-title">Parcerias</h5>
+            <ul class="menu-list list-unstyled">
+              <li><span class="nav-link">Worten</span></li>
+              <li><span class="nav-link">Fnac</span></li>
+              <li><span class="nav-link">Rádio Popular</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Newsletter -->
+        <div class="col-lg-3 col-md-6 col-sm-6">
+          <div class="footer-menu">
+            <h5 class="widget-title">Newsletter</h5>
+            <p>Recebe promoções exclusivas em eletrodomésticos.</p>
+
+            <form class="d-flex mt-3 gap-0">
+              <input class="form-control rounded-start rounded-0 bg-light" type="email" placeholder="O teu email">
+              <button class="btn btn-dark rounded-end rounded-0" type="submit">
+                Subscrever
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </footer>
+
+  <div id="footer-bottom">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-6 copyright">
+          <p>© 2026 HomeMark. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="js/jquery-1.11.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
+    crossorigin="anonymous"></script>
+  <script src="js/plugins.js"></script>
+  <script src="js/script.js"></script>
+</body>
+
+</html>
