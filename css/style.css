@@ -915,3 +915,58 @@ h1,h2,h3,h4,h5,h6 {
 .filter-option:hover {
     color: #000;
 }
+
+/*----------------------------------------------*/
+/* MENU DROPDOWN HOVER STYLES */
+/*----------------------------------------------*/
+
+/* Hover no nav-link (Informatica, Eletrodomésticos, etc) */
+.nav-item.dropdown > .nav-link:hover {
+    color: #FFC43F;
+    text-decoration: none;
+}
+
+/* Dropdown menu styling - aparecer ao passar rato */
+.nav-item.dropdown:hover > .dropdown-menu,
+.dropdown-menu.show {
+    display: block !important;
+    animation: slideDown 0.3s ease;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border: none;
+    border-radius: 8px;
+    margin-top: 5px;
+}
+
+/* Animação suave */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Itens do dropdown */
+.dropdown-menu .dropdown-item {
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+    padding: 10px 20px;
+}
+
+/* Hover nos itens */
+.dropdown-menu .dropdown-item:hover {
+    background-color: #FFF9EB;
+    color: #FFC43F;
+    border-left-color: #FFC43F;
+    padding-left: 25px;
+}
+
+/* Para desktop - mostrar ao hover */
+@media (min-width: 992px) {
+    .nav-item.dropdown:hover > .dropdown-menu {
+        display: block !important;
+    }
+}

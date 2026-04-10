@@ -1,0 +1,24 @@
+{
+  "name": "eletrosync",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RubenPereira2005/EletroSync.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RubenPereira2005/EletroSync/issues"
+  },
+  "homepage": "https://github.com/RubenPereira2005/EletroSync#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
