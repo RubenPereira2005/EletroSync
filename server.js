@@ -1,27 +1,20 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// Servir ficheiros estáticos
+// Servir arquivos da raiz para CSS, Scripts e Imagens
 app.use(express.static(path.join(__dirname)));
+app.use(express.json());
 
-// Rotas
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
+// Servir as páginas HTML automaticamente da pasta 'pages' 
+// O { extensions: ['html'] } permite aceder a localhost:3000/login (sem o .html no fim)
+app.use(express.static(path.join(__dirname, 'pages'), { extensions: ['html'] }));
 
-app.get('/product', (req, res) => {
-  res.sendFile(path.join(__dirname, 'product.html'));
-});
-
-app.get('/product-profile', (req, res) => {
-  res.sendFile(path.join(__dirname, 'product-profile.html'));
-});
-
-app.get('/profile', (req, res) => {
-  res.sendFile(path.join(__dirname, 'profile.html'));
-});
+// API Routes
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
 
 // Iniciar servidor
 app.listen(PORT, () => {
