@@ -750,65 +750,53 @@ h1,h2,h3,h4,h5,h6 {
   height: auto;
 }
 
-/* 2) Banners/Slides: regras base (desktop) */
-.banner-ad.block-2,
-.banner-ad.block-3,
-.swiper-slide.block-4,
-.swiper-slide.block-5,
-.swiper-slide.block-6 {
-  background-repeat: no-repeat;
+/* 2) Imagem do produto dentro do banner (tag <img> real) */
+.banner-product-img {
+  max-height: 380px;
+  width: 100%;
+  object-fit: contain;
+  object-position: right bottom;
+  display: block;
 }
 
-/* Banner pequeno (block-2) */
-.banner-ad.block-2 {
-  background-image: url("../images/torras1.png");
-  background-size: 300px;
-  background-position: 110% 450%;
-  background-origin: content-box;
+/* Slide com imagem: row ocupa toda a largura e alinha itens em baixo */
+.banner-ad .swiper-slide {
+  min-height: 320px;
+  display: flex;
+}
+.banner-ad .swiper-slide .banner-content,
+.banner-ad .banner-content {
+  width: 100%;
 }
 
-/* Banner pequeno (block-3) */
-.banner-ad.block-3 {
-  background-image: url("../images/airpod.png");
-  background-size: 500px;
-  background-position: 160% bottom;
+/* Tamanho do display-4 dentro dos banners: responsivo */
+.banner-ad .banner-content .display-4 {
+  font-size: clamp(1.4rem, 3vw, 3rem);
+  line-height: 1.2;
 }
 
-/* Slide 1 */
-.swiper-slide.block-4 {
-  background-image: url("../images/pctorre.png");
-  background-size: 400px;
-  background-position: right bottom;
+@media (max-width: 768px) {
+  .banner-product-img {
+    max-height: 200px;
+  }
+  .banner-ad .swiper-slide {
+    min-height: 200px;
+  }
+  /* Esconder parágrafo no mobile para dar espaço */
+  .banner-ad .banner-content .banner-para {
+    display: none;
+  }
 }
 
-/* Slide da Fnac */
-.swiper-slide.block-5 {
-  background-image: url("../images/comando.png");
-  background-size: 300px;
-  background-position: right 20px bottom 20px;
-}
-
-/* Slide da Rádio Popular */
-.swiper-slide.block-6 {
-  background-image: url("../images/tv.png");
-  background-size: 500px;
-  background-position: right -40px bottom 20px;
-}
-
-/* 3) Mobile: logo e backgrounds mais leves */
 @media (max-width: 576px) {
+  .banner-product-img {
+    max-height: 140px;
+  }
   .main-logo img.img-fluid {
     width: 85%;
   }
-
-  .banner-ad.block-2,
-  .banner-ad.block-3,
-  .swiper-slide.block-4,
-  .swiper-slide.block-5,
-  .swiper-slide.block-6 {
-    background-size: 180px;
-    background-position: right 10px bottom 10px;
-    background-origin: padding-box; /* mais previsível no mobile */
+  .banner-ad .swiper-slide {
+    min-height: 160px;
   }
 }
 
@@ -837,18 +825,6 @@ h1,h2,h3,h4,h5,h6 {
   .banner-ad.large .banner-content .display-4{
     font-size: 32px;
     line-height: 1.15;
-  }
-}
-
-@media (max-width: 576px){
-  .banner-ad.block-2,
-  .banner-ad.block-3,
-  .swiper-slide.block-4,
-  .swiper-slide.block-5,
-  .swiper-slide.block-6{
-    background-size: 180px;
-    background-position: right 10px bottom 10px;
-    background-origin: padding-box;
   }
 }
 
