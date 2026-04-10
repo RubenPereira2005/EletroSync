@@ -294,7 +294,16 @@
         <div class="container-fluid">
             <div class="row">
 
-                <div class="col-md-2 filter-sidebar">
+                <!-- Botão de filtros - visível apenas no mobile -->
+                <div class="col-12 filter-toggle-btn mb-3">
+                    <button class="btn btn-outline-secondary w-100" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#filterSidebar" aria-expanded="false"
+                        aria-controls="filterSidebar">
+                        <i class="fa-solid fa-sliders me-2"></i> Mostrar / Ocultar Filtros
+                    </button>
+                </div>
+
+                <div class="col-md-2 filter-sidebar collapse d-md-block" id="filterSidebar">
 
                     <h6 class="filter-title">Filtros</h6>
 
