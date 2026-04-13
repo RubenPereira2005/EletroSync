@@ -1,18 +1,71 @@
 // Este ficheiro gere a autenticação comunicando com a nossa API Node em /api/auth
 
+// Funções utilitárias para sessão
+function storeSession(sessionData, rememberMe) {
+    const dataToStore = {
+        data: sessionData,
+        expiry: rememberMe ? (Date.now() + 30 * 24 * 60 * 60 * 1000) : null
+    };
+    if (rememberMe) {
+        localStorage.setItem('eletrosync_session', JSON.stringify(dataToStore));
+        sessionStorage.removeItem('eletrosync_session');
+    } else {
+        sessionStorage.setItem('eletrosync_session', JSON.stringify(dataToStore));
+        localStorage.removeItem('eletrosync_session');
+    }
+}
+
+function retrieveSession() {
+    let sessionStr = sessionStorage.getItem('eletrosync_session') || localStorage.getItem('eletrosync_session');
+    if (!sessionStr) return null;
+    
+    try {
+        const parsed = JSON.parse(sessionStr);
+        if (parsed.expiry && Date.now() > parsed.expiry) {
+            localStorage.removeItem('eletrosync_session');
+            sessionStorage.removeItem('eletrosync_session');
+            return null;
+        }
+        return parsed.data ? parsed.data : parsed;
+    } catch (e) {
+        return null;
+    }
+}
+
 // Função auxiliar para inicializar a sessão se existir cache
 function checkSession() {
-    const sessionStr = localStorage.getItem('eletrosync_session');
-    if (sessionStr) {
-        try {
-            const session = JSON.parse(sessionStr);
-            if (session && session.user) {
-                console.log("Utilizador autenticado via API:", session.user);
-                updateUIAfterLogin(session.user);
-            }
-        } catch (e) {
-            console.error("Erro a ler sessão local:", e);
-        }
+    let isAuthenticated = false;
+    const sessionData = retrieveSession();
+    
+    if (sessionData && sessionData.user) {
+        console.log("Utilizador autenticado via API:", sessionData.user);
+        updateUIAfterLogin(sessionData.user);
+        isAuthenticated = true;
+    }
+
+    if (!isAuthenticated) {
+        updateUIForLoggedOut();
+    }
+}
+
+function updateUIForLoggedOut() {
+    // Esconder o botão de logout usando a classe do Bootstrap 'd-none'
+    const logoutBtnContainers = document.querySelectorAll('#logout-btn-container');
+    logoutBtnContainers.forEach(container => container.classList.add('d-none'));
+
+    // Mudar o link de perfil para login e usar ícone de 'entrar'
+    const profileLinks = document.querySelectorAll('a[href="profile.html"], a[href="/profile"]');
+    profileLinks.forEach(link => {
+        link.href = '/login.html';
+        link.title = 'Entrar / Registar';
+        link.innerHTML = '<i class="fa-solid fa-right-to-bracket fs-5" style="padding: 2px;"></i>';
+    });
+
+    // Se estiver explicitamente na página de perfil, alertar e redirecionar
+    const path = window.location.pathname;
+    if (path.includes('profile') && !path.includes('product-profile')) {
+        alert("Não tens sessão iniciada!");
+        window.location.href = '/login.html';
     }
 }
 
@@ -27,6 +80,13 @@ function updateUIAfterLogin(user) {
     const profileLink = document.querySelector('a[href="profile.html"]');
     if (profileLink) {
         profileLink.title = user.user_metadata?.full_name || user.email;
+    }
+
+    // Atualiza o nome na página de perfil, se estivermos nela
+    const profileNameElement = document.getElementById('profile-user-name');
+    if (profileNameElement) {
+        const userName = user.user_metadata?.full_name || user.email.split('@')[0];
+        profileNameElement.textContent = `Olá ${userName}!`;
     }
 }
 
@@ -44,7 +104,7 @@ if (passwordInput) {
     passwordInput.addEventListener('input', () => {
         const val = passwordInput.value;
         let pwr = 0;
-        
+
         if (val.length > 5) pwr += 33;
         if (val.length > 7 && /[A-Z]/.test(val) && /[0-9]/.test(val)) pwr += 33;
         if (val.length > 10 && /[^A-Za-z0-9]/.test(val)) pwr += 34;
@@ -142,11 +202,11 @@ if (verifyDoneBtn) {
                 verifyDoneBtn.disabled = false;
                 verifyDoneBtn.innerText = "Já confirmei o email";
             } else {
-                // Sucesso! Guardar token no localStorage 
-                localStorage.setItem('eletrosync_session', JSON.stringify({
+                // Sucesso! Guardar token sem duração permanente a menos que alterem
+                storeSession({
                     user: responseData.user,
                     session: responseData.session
-                }));
+                }, false);
                 window.location.href = "/";
             }
         } catch (error) {
@@ -184,10 +244,13 @@ if (loginForm) {
                 alert("Erro: " + errorMsg);
             } else {
                 // Logado com sucesso
-                localStorage.setItem('eletrosync_session', JSON.stringify({
+                const rememberMeEl = document.getElementById('remember-me');
+                const rememberMe = rememberMeEl ? rememberMeEl.checked : false;
+                
+                storeSession({
                     user: responseData.user,
                     session: responseData.session
-                }));
+                }, rememberMe);
                 window.location.href = "/";
             }
         } catch (error) {
@@ -206,9 +269,10 @@ if (loginForm) {
 async function handleLogout() {
     try {
         await fetch('/api/auth/logout', { method: 'POST' });
-    } catch(e) {}
+    } catch (e) { }
     localStorage.removeItem('eletrosync_session');
-    window.location.href = "/login.html";
+    sessionStorage.removeItem('eletrosync_session');
+    window.location.href = "/";
 }
 
 // Exportar ou colocar global

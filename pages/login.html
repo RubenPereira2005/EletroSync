@@ -11,40 +11,9 @@
   <link rel="stylesheet" type="text/css" href="css/vendor.css">
   <link rel="stylesheet" type="text/css" href="css/style.css">
   
-  <style>
-    body {
-      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .glass-auth-container {
-      max-width: 450px;
-      margin: 60px auto;
-      padding: 40px;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.85);
-      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-    }
-
-    .form-control {
-      border-radius: 10px;
-      padding: 12px 15px;
-      border: 1px solid #ced4da;
-    }
-
-    .form-control:focus {
-      box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
-      border-color: #8fb3fb;
-    }
-  </style>
 </head>
 
-<body>
+<body class="auth-body">
 
   <header class="py-3 bg-white shadow-sm" style="background: rgba(255,255,255,0.9); backdrop-filter: blur(5px);">
     <div class="container d-flex justify-content-center">
@@ -66,9 +35,14 @@
             <input type="email" class="form-control" id="email" required placeholder="exemplo@email.com">
           </div>
           
-          <div class="mb-4">
+          <div class="mb-3">
             <label for="password" class="form-label fw-semibold">Password</label>
             <input type="password" class="form-control" id="password" required placeholder="A sua palavra-passe">
+          </div>
+
+          <div class="mb-4 form-check d-flex align-items-center gap-2" style="padding-left: 0;">
+            <input type="checkbox" class="form-check-input m-0" id="remember-me">
+            <label class="form-check-label text-muted m-0" for="remember-me" style="transform: translateY(1px);">Lembrar-me</label>
           </div>
           
           <div class="d-grid gap-2">
