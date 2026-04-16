@@ -12,81 +12,9 @@
   <link rel="stylesheet" type="text/css" href="css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   
-  <style>
-    body {
-      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .glass-auth-container {
-      max-width: 500px;
-      margin: 40px auto;
-      padding: 40px;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.85); /* Semi-transparent white */
-      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15); /* Soft shadow */
-      backdrop-filter: blur(10px); /* Glassmorphism blur effect */
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      transition: all 0.3s ease-in-out;
-    }
-
-    .form-control {
-      border-radius: 10px;
-      padding: 12px 15px;
-      border: 1px solid #ced4da;
-    }
-
-    .form-control:focus {
-      box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
-      border-color: #8fb3fb;
-    }
-
-    .pw-strength-container {
-      height: 10px;
-      background-color: #dee2e6; /* Cinza ligeiramente mais escuro para contrastar */
-      border-radius: 10px;
-      margin-top: 10px;
-      margin-bottom: 2px;
-      overflow: hidden;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,0.15); /* Sombra interior suave */
-    }
-
-    .pw-strength-bar {
-      height: 100%;
-      width: 0%;
-      border-radius: 10px;
-      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.4s ease;
-    }
-
-    #pw-strength-text {
-      font-size: 0.85em;
-      margin-top: 4px;
-      font-weight: 600;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-    
-    .confirm-icon {
-      font-size: 5rem;
-      color: #0d6efd;
-      margin-bottom: 20px;
-      animation: float 3s ease-in-out infinite;
-    }
-
-    @keyframes float {
-      0% { transform: translateY(0px); }
-      50% { transform: translateY(-10px); }
-      100% { transform: translateY(0px); }
-    }
-  </style>
 </head>
 
-<body>
+<body class="auth-body">
 
   <header class="py-3 bg-white shadow-sm" style="background: rgba(255,255,255,0.9); backdrop-filter: blur(5px);">
     <div class="container d-flex justify-content-center">
