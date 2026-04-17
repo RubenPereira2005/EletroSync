@@ -1291,3 +1291,130 @@ header .row.border-bottom {
   50% { transform: translateY(-10px); }
   100% { transform: translateY(0px); }
 }
+
+/* --- Card Base - Estilo Clean & Compacto --- */
+/* --- Card Base --- */
+.transition-hover {
+    transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid #f2f2f2;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03) !important;
+    padding-bottom: 20px !important;
+}
+
+/* --- Estrela "Mais Bonita" (Dourado Real) --- */
+.premium-star {
+    font-size: 0.85rem;
+    background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1));
+    transition: transform 0.3s ease;
+}
+
+/* --- Efeito Hover --- */
+.transition-hover:hover {
+    transform: translateY(-10px);
+    /* Sombra mais difusa e elegante */
+    box-shadow: 0 25px 50px rgba(0,0,0,0.1) !important;
+    border-color: #ffc43f;
+}
+
+/* Zoom orgânico na imagem */
+.product-image {
+    transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.transition-hover:hover .product-image {
+    transform: scale(1.1) rotate(2deg);
+}
+
+/* A estrela pulsa ligeiramente no hover do card */
+.transition-hover:hover .premium-star {
+    transform: scale(1.2);
+}
+
+/* Estilo do Título */
+.product-content h3 {
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+    transition: color 0.3s ease;
+}
+
+.transition-hover:hover h3 {
+    color: #ffc43f !important; /* Título muda para a cor da borda no hover */
+}
+
+/* Badges de lojas mais compactos e elegantes */
+.product-content .badge {
+    font-size: 9px !important;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 3px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+    background-color: #f8f9fa !important;
+    color: #555 !important;
+    border: 1px solid #e9ecef !important;
+    margin-bottom: 4px;
+}
+
+/* Efeito ao passar o rato no card (opcional: destacar as lojas) */
+.transition-hover:hover .badge {
+    border-color: #ffc43f !important;
+    color: #2d2d2d !important;
+}
+
+/* Cor de destaque suave para a linha mais barata */
+.table-success-light {
+    background-color: #f8fff9 !important;
+}
+
+/* Remover bordas chatas da tabela */
+.table > :not(caption) > * > * {
+    padding: 1rem 0.5rem;
+    border-bottom-width: 1px;
+    border-color: #f0f0f0;
+}
+
+.table-responsive {
+    overflow: hidden; /* Garante que os cantos arredondados funcionam */
+}
+
+.store-logo-name {
+    color: #333;
+    letter-spacing: -0.5px;
+}
+
+#favBtn {
+    transition: all 0.3s ease;
+    background-color: #fff;
+    width: 55px;
+    height: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#favBtn:hover {
+    transform: scale(1.1);
+    background-color: #ffefef;
+}
+
+#favBtn.active i {
+    font-weight: 900; /* Preenche o coração */
+    color: #dc3545;
+}
+
+/* Ajuste para a tabela não ficar colada ao título */
+.comparison-section {
+    border-top: 1px solid #eee;
+    padding-top: 2rem;
+}

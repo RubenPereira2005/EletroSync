@@ -37,41 +37,63 @@ const catalog = {
 
 const categories = Object.keys(catalog);
 
-// 2. Gerar 24 produtos aleatórios respeitando a categoria
-const products = Array.from({ length: 24 }, () => {
-  const cat = categories[Math.floor(Math.random() * categories.length)];
-  const items = catalog[cat];
-  const selected = items[Math.floor(Math.random() * items.length)];
+const storesList = ["Worten", "Fnac", "Radio Popular", "PC Diga"];
 
-  return {
-    name: selected.name,
-    image: selected.image,
-    category: cat,
-    price: (Math.random() * 1200 + 50).toFixed(2),
-    rating: (Math.random() * 1 + 4).toFixed(1),
-    discount: Math.random() > 0.7
-  };
+const products = Array.from({ length: 40 }, () => { // Aumentei para 40 para teres mais resultados ao filtrar
+    const cat = categories[Math.floor(Math.random() * categories.length)];
+    const items = catalog[cat];
+    const selected = items[Math.floor(Math.random() * items.length)];
+
+    const numShops = Math.floor(Math.random() * 4) + 1;
+    const shuffledStores = [...storesList].sort(() => 0.5 - Math.random());
+    const productShops = shuffledStores.slice(0, numShops).map(store => ({
+        name: store,
+        price: (Math.random() * 1200 + 50).toFixed(2)
+    }));
+
+    const minPrice = Math.min(...productShops.map(s => parseFloat(s.price)));
+
+    return {
+        name: selected.name,
+        image: selected.image,
+        category: cat,
+        rating: (Math.random() * 1 + 4).toFixed(1),
+        discount: Math.random() > 0.7, // Promoção
+        eventX: Math.random() > 0.8,    // Evento X (novo campo)
+        shops: productShops,
+        minPrice: minPrice.toFixed(2)
+    };
 });
 
-// 3. Funções de Renderização
 function renderProduct(p) {
+  // Criar badges das lojas
+  const storeBadges = p.shops.map(s => 
+    `<span class="badge bg-light text-dark border me-1" style="font-size: 10px;">${s.name}</span>`
+  ).join("");
+
   return `
     <div class="col">
-      <div class="product-item h-100 border p-3 position-relative">
+      <div class="product-item transition-hover p-3 shadow-sm">
         ${p.discount ? `<span class="badge bg-success position-absolute m-2" style="top:0; left:0; z-index:10;">-30%</span>` : ""}
-        <a href="#" class="btn-wishlist position-absolute m-2" style="top:0; right:0; z-index:10;">
-          <svg width="20" height="20"><use xlink:href="#heart"></use></svg>
-        </a>
+        
         <figure class="text-center">
-          <img src="${p.image}" class="img-fluid mb-3" style="max-height: 150px; object-fit: contain;">
+          <img src="${p.image}" class="img-fluid mb-3 product-image" style="max-height: 120px; object-fit: contain;">
         </figure>
-        <h3 class="fs-6 text-dark">${p.name}</h3>
-        <span class="qty d-block small text-muted">1 Unidade</span>
-        <div class="d-flex align-items-center gap-1 my-2">
-           <svg width="16" height="16" class="text-primary"><use xlink:href="#star-solid"></use></svg>
-           <span class="small">${p.rating}</span>
+        
+        <div class="product-content">
+            <h3 class="fs-6 text-dark mb-1" style="min-height: 38px; line-height: 1.2;">${p.name}</h3>
+            
+            <div class="d-flex align-items-center gap-1 mb-2">
+               <i class="fa-solid fa-star premium-star"></i>
+               <span class="small fw-bold">${p.rating}</span>
+            </div>
+
+            <div class="mb-2 d-flex flex-wrap">
+                ${storeBadges}
+            </div>
+            
+            <span class="price fw-bold text-primary fs-6">desde ${p.minPrice}€</span>
         </div>
-        <span class="price d-block fw-bold text-primary">${p.price}€</span>
       </div>
     </div>
   `;
@@ -80,8 +102,9 @@ function renderProduct(p) {
 function renderTo(containerId, list) {
   const container = document.getElementById(containerId);
   if (!container) return;
-  // Garante as classes de grid do Bootstrap
-  container.className = "row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4 pt-4";
+  
+  // g-4 adiciona o "gutter" (espaço) necessário para o hover não sobrepor o card do lado
+  container.className = "row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4 pt-4 pb-5";
   container.innerHTML = list.length > 0 ? list.map(renderProduct).join("") : '<p class="col-12 text-center">Nenhum produto encontrado.</p>';
 }
 
@@ -90,8 +113,11 @@ function renderCategory(categoryKey) {
   const maxPrice = rangeInput ? parseFloat(rangeInput.value) : 2000;
   
   const filtered = products.filter(p => {
+    // IMPORTANTE: p.category tem de bater exatamente com a chave do catálogo
     const matchCategory = p.category.toLowerCase() === categoryKey.toLowerCase();
-    const matchPrice = parseFloat(p.price) <= maxPrice;
+    // IMPORTANTE: Usar p.minPrice em vez de p.price
+    const matchPrice = parseFloat(p.minPrice) <= maxPrice;
+    
     return matchCategory && matchPrice;
   });
 
@@ -100,40 +126,85 @@ function renderCategory(categoryKey) {
 
 // 4. Eventos
 // Clique nas Tabs (Abas)
+// Clique nas Tabs (Abas) - Agora dispara o filtro completo
 document.querySelectorAll("#nav-tab .nav-link").forEach(tab => {
-  tab.addEventListener("shown.bs.tab", (e) => {
-    const target = e.target.getAttribute("data-bs-target");
-    const category = target.replace("#nav-", "");
-    
-    if (category === "all") {
-       renderTo("grid-all", products);
-    } else {
-       // Mapeamento especial se os IDs forem diferentes das chaves do catálogo
-       let catKey = category;
-       if (category === "jogos") catKey = "gaming";
-       if (category === "outros") catKey = "outros"; // Garante que lê 'outros'
-       
-       renderCategory(catKey);
-    }
+  tab.addEventListener("shown.bs.tab", () => {
+    // Em vez de inventar uma lógica nova, chamamos o clique do botão aplicar
+    // Isso garante que se mudares de categoria, os filtros de preço/loja continuam a valer
+    document.querySelector(".filter-sidebar .btn-primary").click();
   });
 });
 
-// Botão Aplicar Filtros
+// Função unificada de Filtros
 document.querySelector(".filter-sidebar .btn-primary").addEventListener("click", () => {
-  const activeTab = document.querySelector(".nav-link.active");
-  const category = activeTab.getAttribute("data-bs-target").replace("#nav-", "");
-  const maxPrice = parseFloat(document.querySelector(".form-range").value);
+    // 1. Categoria ativa
+    const activeTab = document.querySelector(".nav-link.active");
+    const categoryTarget = activeTab.getAttribute("data-bs-target").replace("#nav-", "");
+    let catKey = (categoryTarget === "jogos") ? "gaming" : categoryTarget;
 
-  if (category === "all") {
-    const filtered = products.filter(p => parseFloat(p.price) <= maxPrice);
-    renderTo("grid-all", filtered);
-  } else {
-    const catKey = (category === "jogos") ? "gaming" : category;
-    renderCategory(catKey);
-  }
+    // 2. Preço
+    const maxPrice = parseFloat(document.querySelector(".form-range").value);
+
+    // 3. Capturar estados das Checkboxes de "Categorias" (Promoção e Evento)
+    const categoryCheckboxes = Array.from(document.querySelectorAll('.filter-group:nth-child(3) .filter-option'));
+    
+    // Procura a checkbox que tem o texto "Promoção"
+    const promoChecked = categoryCheckboxes.some(opt => 
+        opt.textContent.includes("Promoção") && opt.querySelector('input').checked
+    );
+    
+    // Procura a checkbox que tem o texto "Evento X"
+    const eventXChecked = categoryCheckboxes.some(opt => 
+        opt.textContent.includes("Evento X") && opt.querySelector('input').checked
+    );
+
+    // 4. Lojas Selecionadas
+    const selectedStores = Array.from(document.querySelectorAll('.filter-group:nth-child(4) input[type="checkbox"]:checked'))
+        .map(cb => cb.parentElement.textContent.trim());
+
+    // 5. Filtragem Final
+    const filtered = products.filter(p => {
+        const matchCategory = (categoryTarget === "all") || (p.category === catKey);
+        const matchPrice = parseFloat(p.minPrice) <= maxPrice;
+        
+        // Se a checkbox "Promoção" estiver ligada, só mostra se p.discount for true
+        const matchPromo = promoChecked ? p.discount === true : true;
+        
+        // Se a checkbox "Evento X" estiver ligada, só mostra se p.eventX for true
+        const matchEvent = eventXChecked ? p.eventX === true : true;
+
+        const productStoreNames = p.shops.map(s => s.name);
+        const matchStore = selectedStores.length > 0 
+            ? selectedStores.some(store => productStoreNames.includes(store)) 
+            : true;
+
+        return matchCategory && matchPrice && matchPromo && matchEvent && matchStore;
+    });
+
+    renderTo(`grid-${categoryTarget}`, filtered);
 });
 
 // Inicialização
 window.addEventListener("DOMContentLoaded", () => {
   renderTo("grid-all", products);
+});
+
+document.addEventListener('click', function(e) {
+    const card = e.target.closest('.transition-hover');
+    
+    if (card) {
+        // 1. Pegar o nome do produto do card que foi clicado
+        const productName = card.querySelector('h3').innerText;
+        
+        // 2. Encontrar o objeto completo do produto na nossa lista 'products'
+        const productData = products.find(p => p.name === productName);
+        
+        if (productData) {
+            // 3. Guardar no localStorage para a outra página ler
+            localStorage.setItem('selectedProduct', JSON.stringify(productData));
+            
+            // 4. Navegar para a página de detalhes
+            window.location.href = 'single-product.html';
+        }
+    }
 });
