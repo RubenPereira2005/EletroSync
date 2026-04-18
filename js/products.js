@@ -36,13 +36,26 @@ const catalog = {
 };
 
 const categories = Object.keys(catalog);
-
 const storesList = ["Worten", "Fnac", "Radio Popular", "PC Diga"];
 
-const products = Array.from({ length: 40 }, () => { // Aumentei para 40 para teres mais resultados ao filtrar
+// 1. Mover o mapeamento para FORA do loop
+const subMapping = {
+    eletrodomesticos: ["Cozinha", "Lavandaria", "Limpeza", "Climatização", "Cuidado pessoal"],
+    informatica: ["Portáteis", "Computadores fixos", "Monitores", "Impressoras", "Periféricos"],
+    smartphones: ["Smartphones", "Capas e películas", "Carregadores", "Wearables"],
+    gaming: ["Consolas", "Jogos", "Comandos", "Cadeiras"],
+    imagem: ["TVs", "Barras de som", "Colunas", "Auscultadores"],
+    outros: ["Cabos", "Pilhas"]
+};
+
+const products = Array.from({ length: 100 }, () => { 
     const cat = categories[Math.floor(Math.random() * categories.length)];
     const items = catalog[cat];
     const selected = items[Math.floor(Math.random() * items.length)];
+
+    // Agora o possiveisSubs funciona porque o subMapping já existe acima
+    const possiveisSubs = subMapping[cat] || ["Geral"];
+    const subSorteada = possiveisSubs[Math.floor(Math.random() * possiveisSubs.length)];
 
     const numShops = Math.floor(Math.random() * 4) + 1;
     const shuffledStores = [...storesList].sort(() => 0.5 - Math.random());
@@ -57,9 +70,10 @@ const products = Array.from({ length: 40 }, () => { // Aumentei para 40 para ter
         name: selected.name,
         image: selected.image,
         category: cat,
+        subcategory: subSorteada, 
         rating: (Math.random() * 1 + 4).toFixed(1),
-        discount: Math.random() > 0.7, // Promoção
-        eventX: Math.random() > 0.8,    // Evento X (novo campo)
+        discount: Math.random() > 0.7, 
+        eventX: Math.random() > 0.8,    
         shops: productShops,
         minPrice: minPrice.toFixed(2)
     };
@@ -98,14 +112,46 @@ function renderProduct(p) {
     </div>
   `;
 }
+let swiperInstance; // Variável global para guardar o carrossel
 
 function renderTo(containerId, list) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  
-  // g-4 adiciona o "gutter" (espaço) necessário para o hover não sobrepor o card do lado
-  container.className = "row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4 pt-4 pb-5";
-  container.innerHTML = list.length > 0 ? list.map(renderProduct).join("") : '<p class="col-12 text-center">Nenhum produto encontrado.</p>';
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    if (containerId === 'carousel-novidades') {
+        container.innerHTML = list.map(p => `
+            <div class="swiper-slide">
+                ${renderProduct(p)}
+            </div>
+        `).join("");
+        
+        // Pequeno delay para garantir que o HTML foi renderizado antes do Swiper agir
+        setTimeout(() => {
+            initSwiper();
+        }, 100); 
+    } else {
+        container.className = "row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4 pt-4 pb-5";
+        container.innerHTML = list.map(renderProduct).join("");
+    }
+}
+
+function initSwiper() {
+    // Se já existir um swiper, destrói para criar um novo (evita bugs)
+    if (swiperInstance) swiperInstance.destroy();
+
+    swiperInstance = new Swiper(".all-novidades-carousel", {
+        slidesPerView: 1,
+        spaceBetween: 20,
+        navigation: {
+            nextEl: ".all-novidades-next",
+            prevEl: ".all-novidades-prev",
+        },
+        breakpoints: {
+            640: { slidesPerView: 2 },
+            1024: { slidesPerView: 4 },
+            1400: { slidesPerView: 5 }
+        }
+    });
 }
 
 function renderCategory(categoryKey) {
@@ -124,69 +170,181 @@ function renderCategory(categoryKey) {
   renderTo(`grid-${categoryKey}`, filtered);
 }
 
-// 4. Eventos
-// Clique nas Tabs (Abas)
-// Clique nas Tabs (Abas) - Agora dispara o filtro completo
-document.querySelectorAll("#nav-tab .nav-link").forEach(tab => {
-  tab.addEventListener("shown.bs.tab", () => {
-    // Em vez de inventar uma lógica nova, chamamos o clique do botão aplicar
-    // Isso garante que se mudares de categoria, os filtros de preço/loja continuam a valer
-    document.querySelector(".filter-sidebar .btn-primary").click();
-  });
-});
+function renderSubFilters(categoryKey) {
+    const container = document.getElementById('sub-filter-container');
+    
+    // Se a categoria for 'all' ou 'Todos', escondemos a barra e saímos da função
+    if (!categoryKey || categoryKey === 'all' || categoryKey === 'Todos') {
+        container.style.display = 'none';
+        container.innerHTML = ''; // Limpa os botões anteriores
+        return;
+    }
 
-// Função unificada de Filtros
-document.querySelector(".filter-sidebar .btn-primary").addEventListener("click", () => {
-    // 1. Categoria ativa
+    const subs = subMapping[categoryKey] || [];
+    
+    // Se não houver subcategorias para esta categoria, também escondemos
+    if (subs.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    // Caso contrário, mostramos e geramos os botões
+    container.style.display = 'flex';
+    container.innerHTML = `
+        <button class="btn-sub active" onclick="filterBySub('${categoryKey}', null, this)">Tudo em ${categoryKey}</button>
+        ${subs.map(sub => `
+            <button class="btn-sub" onclick="filterBySub('${categoryKey}', '${sub}', this)">${sub}</button>
+        `).join('')}
+    `;
+}
+// Função Mestra que lê TODOS os estados (Sidebar + Subcategoria + Categoria)
+function applyAllFilters(forcedSub = undefined) {
+    // 1. Identificar Categoria Ativa
     const activeTab = document.querySelector(".nav-link.active");
     const categoryTarget = activeTab.getAttribute("data-bs-target").replace("#nav-", "");
     let catKey = (categoryTarget === "jogos") ? "gaming" : categoryTarget;
 
-    // 2. Preço
+    // 2. Identificar Subcategoria Ativa
+    // Se passarmos forcedSub (clique no botão), usamos esse. 
+    // Senão, procuramos o botão que tem a classe 'active' no container de subs.
+    let activeSub = forcedSub;
+    if (forcedSub === undefined) {
+        const activeSubBtn = document.querySelector("#sub-filter-container .btn-sub.active");
+        activeSub = (activeSubBtn && !activeSubBtn.textContent.includes("Tudo em")) ? activeSubBtn.textContent.trim() : null;
+    }
+
+    // 3. Pegar valores da Sidebar
     const maxPrice = parseFloat(document.querySelector(".form-range").value);
-
-    // 3. Capturar estados das Checkboxes de "Categorias" (Promoção e Evento)
     const categoryCheckboxes = Array.from(document.querySelectorAll('.filter-group:nth-child(3) .filter-option'));
-    
-    // Procura a checkbox que tem o texto "Promoção"
-    const promoChecked = categoryCheckboxes.some(opt => 
-        opt.textContent.includes("Promoção") && opt.querySelector('input').checked
-    );
-    
-    // Procura a checkbox que tem o texto "Evento X"
-    const eventXChecked = categoryCheckboxes.some(opt => 
-        opt.textContent.includes("Evento X") && opt.querySelector('input').checked
-    );
-
-    // 4. Lojas Selecionadas
+    const promoChecked = categoryCheckboxes.some(opt => opt.textContent.includes("Promoção") && opt.querySelector('input').checked);
+    const eventXChecked = categoryCheckboxes.some(opt => opt.textContent.includes("Evento X") && opt.querySelector('input').checked);
     const selectedStores = Array.from(document.querySelectorAll('.filter-group:nth-child(4) input[type="checkbox"]:checked'))
-        .map(cb => cb.parentElement.textContent.trim());
+                                .map(cb => cb.parentElement.textContent.trim());
 
-    // 5. Filtragem Final
+    // 4. Filtragem Cruzada
     const filtered = products.filter(p => {
         const matchCategory = (categoryTarget === "all") || (p.category === catKey);
+        const matchSub = (!activeSub || activeSub === "null") ? true : (p.subcategory === activeSub);
         const matchPrice = parseFloat(p.minPrice) <= maxPrice;
-        
-        // Se a checkbox "Promoção" estiver ligada, só mostra se p.discount for true
         const matchPromo = promoChecked ? p.discount === true : true;
-        
-        // Se a checkbox "Evento X" estiver ligada, só mostra se p.eventX for true
         const matchEvent = eventXChecked ? p.eventX === true : true;
-
+        
         const productStoreNames = p.shops.map(s => s.name);
         const matchStore = selectedStores.length > 0 
             ? selectedStores.some(store => productStoreNames.includes(store)) 
             : true;
 
-        return matchCategory && matchPrice && matchPromo && matchEvent && matchStore;
+        return matchCategory && matchSub && matchPrice && matchPromo && matchEvent && matchStore;
     });
 
     renderTo(`grid-${categoryTarget}`, filtered);
+}
+
+function filterBySub(cat, sub, btnElement) {
+    // Apenas gere o visual dos botões
+    const buttons = document.querySelectorAll('#sub-filter-container .btn-sub');
+    buttons.forEach(b => b.classList.remove('active'));
+    btnElement.classList.add('active');
+
+    // Chama a filtragem mestre passando a subcategoria clicada
+    applyAllFilters(sub);
+}
+
+document.querySelector(".filter-sidebar .btn-primary").addEventListener("click", () => {
+    applyAllFilters();
 });
 
-// Inicialização
-window.addEventListener("DOMContentLoaded", () => {
-  renderTo("grid-all", products);
+document.addEventListener("DOMContentLoaded", () => {
+    // 1. Carregamos o Carrossel (independente da página/pesquisa)
+    const novidades = products.slice(0, 15);
+    renderTo("carousel-novidades", novidades);
+
+    // 2. Pegamos os parâmetros da URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchQuery = urlParams.get('query');
+    const catAlvo = urlParams.get('cat');
+    const subAlvo = urlParams.get('sub');
+
+    // --- PRIORIDADE 1: PESQUISA ---
+    if (searchQuery) {
+        const termo = searchQuery.toLowerCase().trim();
+        const resultados = products.filter(p => p.name.toLowerCase().includes(termo));
+
+        // 1. ESCONDER O CARROSSEL DE NOVIDADES (Para não veres a PS5, etc.)
+        const carouselSection = document.querySelector('.py-4.overflow-hidden.border-bottom');
+        if (carouselSection) {
+            carouselSection.style.display = 'none'; 
+        }
+
+        // 2. Ativar a Tab "Todos"
+        const tabAllEl = document.querySelector('#nav-all-tab');
+        if (tabAllEl) {
+            bootstrap.Tab.getOrCreateInstance(tabAllEl).show();
+        }
+
+        // 3. Limpar e Renderizar
+        document.querySelectorAll('.tab-pane .row').forEach(grid => grid.innerHTML = '');
+        
+        if (resultados.length > 0) {
+            renderTo("grid-all", resultados);
+            const title = document.querySelector("#nav-all .section-title");
+            if(title) title.innerText = `Resultados para: "${searchQuery}"`;
+        } else {
+            document.getElementById("grid-all").innerHTML = `<div class="col-12 text-center py-5"><p>Sem resultados para "${searchQuery}"</p></div>`;
+        }
+        
+        renderSubFilters('all');
+        return; 
+    }
+
+    // --- PRIORIDADE 2: CATEGORIA VINDA DE FORA ---
+    if (catAlvo && catAlvo !== 'all') {
+        const tabEl = document.querySelector(`[data-bs-target="#nav-${catAlvo}"]`);
+        if (tabEl) {
+            bootstrap.Tab.getOrCreateInstance(tabEl).show();
+        }
+        
+        renderSubFilters(catAlvo);
+        renderCategory(catAlvo);
+
+        if (subAlvo) {
+            setTimeout(() => {
+                const btn = Array.from(document.querySelectorAll('#sub-filter-container button'))
+                                 .find(b => b.innerText === subAlvo);
+                if (btn) filterBySub(catAlvo, subAlvo, btn);
+            }, 250);
+        }
+    } 
+    // --- PRIORIDADE 3: CARREGAMENTO NORMAL (PÁGINA INICIAL) ---
+    else {
+        renderTo("grid-all", products);
+        renderSubFilters('all');
+    }
+});
+
+// --- Corrigir o evento de clique nas Tabs ---
+document.querySelectorAll("#nav-tab .nav-link").forEach(tab => {
+  tab.addEventListener("shown.bs.tab", (event) => {
+    // Pegar o ID da categoria destino (ex: nav-gaming -> gaming)
+    const targetId = event.target.getAttribute('data-bs-target').replace('#nav-', '');
+    
+    // 1. Limpar e renderizar novos sub-filtros
+    renderSubFilters(targetId);
+    
+    // 2. Renderizar os produtos da categoria
+    if (targetId === 'all') {
+        renderTo("grid-all", products);
+    } else {
+        renderCategory(targetId);
+    }
+
+    // 3. (Opcional) Simular clique no filtro de preço se o tiveres
+    const filterBtn = document.querySelector(".filter-sidebar .btn-primary");
+    if (filterBtn) filterBtn.click();
+    // Dentro do tab.addEventListener("shown.bs.tab", ...)
+    // Substitui o filterBtn.click() por:
+    applyAllFilters();
+  });
 });
 
 document.addEventListener('click', function(e) {

@@ -217,9 +217,8 @@
 
         <div class="col-sm-6 offset-sm-2 offset-md-0 col-lg-5 d-none d-lg-block">
           <div class="search-bar bg-light p-2 my-2 rounded-4 d-flex align-items-center gap-2">
-            <form id="search-form" class="flex-grow-1 m-0" action="index.html" method="post">
-              <input type="text" class="form-control border-0 bg-transparent"
-                placeholder="Pesquisa mais de 20,000 produtos" />
+            <form id="search-form" class="flex-grow-1 m-0" action="product.html" method="GET">
+                <input type="text" name="query" class="form-control border-0 bg-transparent" placeholder="Pesquisa mais de 20,000 produtos">
             </form>
 
             <span class="d-flex align-items-center">
@@ -307,109 +306,87 @@
               <div class="offcanvas-body">
                 <ul class="navbar-nav justify-content-end menu-list list-unstyled d-flex gap-md-3 mb-0">
 
-                  <!-- Todos -->
                   <li class="nav-item">
-                    <a class="nav-link" href="product.html">
-                      Todos os Produtos
-                    </a>
+                    <a class="nav-link" href="product.html">Todos os Produtos</a>
                   </li>
 
-                  <!-- Eletrodomésticos -->
                   <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" role="button" id="Eletrodomesticos" data-bs-toggle="dropdown"
-                      aria-expanded="false">
+                    <a class="nav-link dropdown-toggle" role="button" id="Eletrodomesticos" data-bs-toggle="dropdown" aria-expanded="false">
                       Eletrodomésticos
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="Eletrodomesticos">
-                      <li><a href="index.html" class="dropdown-item">Todos</a></li>
-                      <li><a href="index.html" class="dropdown-item">Cozinha</a></li>
-                      <li><a href="index.html" class="dropdown-item">Lavandaria</a></li>
-                      <li><a href="index.html" class="dropdown-item">Limpeza</a></li>
-                      <li><a href="index.html" class="dropdown-item">Climatização</a></li>
-                      <li><a href="index.html" class="dropdown-item">Cuidado pessoal</a></li>
+                      <li><a href="product.html?cat=eletrodomesticos" class="dropdown-item">Todos</a></li>
+                      <li><a href="product.html?cat=eletrodomesticos&sub=Cozinha" class="dropdown-item">Cozinha</a></li>
+                      <li><a href="product.html?cat=eletrodomesticos&sub=Lavandaria" class="dropdown-item">Lavandaria</a></li>
+                      <li><a href="product.html?cat=eletrodomesticos&sub=Limpeza" class="dropdown-item">Limpeza</a></li>
+                      <li><a href="product.html?cat=eletrodomesticos&sub=Climatização" class="dropdown-item">Climatização</a></li>
+                      <li><a href="product.html?cat=eletrodomesticos&sub=Cuidado pessoal" class="dropdown-item">Cuidado pessoal</a></li>
                     </ul>
                   </li>
 
-                  <!-- Informática -->
                   <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" role="button" id="Informatica" data-bs-toggle="dropdown"
-                      aria-expanded="false">
+                    <a class="nav-link dropdown-toggle" role="button" id="Informatica" data-bs-toggle="dropdown" aria-expanded="false">
                       Informática
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="Informatica">
-                      <li><a href="index.html" class="dropdown-item">Todos</a></li>
-                      <li><a href="index.html" class="dropdown-item">Portáteis</a></li>
-                      <li><a href="index.html" class="dropdown-item">Computadores fixos</a></li>
-                      <li><a href="index.html" class="dropdown-item">Monitores</a></li>
-                      <li><a href="index.html" class="dropdown-item">Impressoras</a></li>
-                      <li><a href="index.html" class="dropdown-item">Periféricos</a></li>
+                      <li><a href="product.html?cat=informatica" class="dropdown-item">Todos</a></li>
+                      <li><a href="product.html?cat=informatica&sub=Portáteis" class="dropdown-item">Portáteis</a></li>
+                      <li><a href="product.html?cat=informatica&sub=Computadores fixos" class="dropdown-item">Computadores fixos</a></li>
+                      <li><a href="product.html?cat=informatica&sub=Monitores" class="dropdown-item">Monitores</a></li>
+                      <li><a href="product.html?cat=informatica&sub=Impressoras" class="dropdown-item">Impressoras</a></li>
+                      <li><a href="product.html?cat=informatica&sub=Periféricos" class="dropdown-item">Periféricos</a></li>
                     </ul>
                   </li>
 
-                  <!-- Smartphones e Acessórios -->
                   <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" role="button" id="SmartphoneseAcessorios"
-                      data-bs-toggle="dropdown" aria-expanded="false">
-                      Smartphones e Acessórios
+                    <a class="nav-link dropdown-toggle" role="button" id="SmartphoneseAcessorios" data-bs-toggle="dropdown" aria-expanded="false">
+                      Smartphones
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="SmartphoneseAcessorios">
-                      <li><a href="index.html" class="dropdown-item">Todos</a></li>
-                      <li><a href="index.html" class="dropdown-item">Smartphones</a></li>
-                      <li><a href="index.html" class="dropdown-item">Capas e películas</a></li>
-                      <li><a href="index.html" class="dropdown-item">Carregadores e cabos</a></li>
-                      <li><a href="index.html" class="dropdown-item">Powerbanks</a></li>
-                      <li><a href="index.html" class="dropdown-item">Wearables</a></li>
+                      <li><a href="product.html?cat=smartphones" class="dropdown-item">Todos</a></li>
+                      <li><a href="product.html?cat=smartphones&sub=Smartphones" class="dropdown-item">Smartphones</a></li>
+                      <li><a href="product.html?cat=smartphones&sub=Capas e películas" class="dropdown-item">Capas e películas</a></li>
+                      <li><a href="product.html?cat=smartphones&sub=Carregadores" class="dropdown-item">Carregadores</a></li>
+                      <li><a href="product.html?cat=smartphones&sub=Wearables" class="dropdown-item">Wearables</a></li>
                     </ul>
                   </li>
 
-                  <!-- Imagem e Som -->
                   <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" role="button" id="ImagemeSom" data-bs-toggle="dropdown"
-                      aria-expanded="false">
+                    <a class="nav-link dropdown-toggle" role="button" id="ImagemeSom" data-bs-toggle="dropdown" aria-expanded="false">
                       Imagem e Som
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="ImagemeSom">
-                      <li><a href="index.html" class="dropdown-item">Todos</a></li>
-                      <li><a href="index.html" class="dropdown-item">TVs</a></li>
-                      <li><a href="index.html" class="dropdown-item">Barras de som</a></li>
-                      <li><a href="index.html" class="dropdown-item">Colunas</a></li>
-                      <li><a href="index.html" class="dropdown-item">Auscultadores</a></li>
-                      <li><a href="index.html" class="dropdown-item">Projetores</a></li>
+                      <li><a href="product.html?cat=imagem" class="dropdown-item">Todos</a></li>
+                      <li><a href="product.html?cat=imagem&sub=TVs" class="dropdown-item">TVs</a></li>
+                      <li><a href="product.html?cat=imagem&sub=Barras de som" class="dropdown-item">Barras de som</a></li>
+                      <li><a href="product.html?cat=imagem&sub=Colunas" class="dropdown-item">Colunas</a></li>
+                      <li><a href="product.html?cat=imagem&sub=Auscultadores" class="dropdown-item">Auscultadores</a></li>
                     </ul>
                   </li>
 
-                  <!-- Gaming -->
                   <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" role="button" id="Gaming" data-bs-toggle="dropdown"
-                      aria-expanded="false">
+                    <a class="nav-link dropdown-toggle" role="button" id="Gaming" data-bs-toggle="dropdown" aria-expanded="false">
                       Gaming
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="Gaming">
-                      <li><a href="index.html" class="dropdown-item">Todos</a></li>
-                      <li><a href="index.html" class="dropdown-item">Consolas</a></li>
-                      <li><a href="index.html" class="dropdown-item">Jogos</a></li>
-                      <li><a href="index.html" class="dropdown-item">Comandos</a></li>
-                      <li><a href="index.html" class="dropdown-item">Headsets</a></li>
-                      <li><a href="index.html" class="dropdown-item">Cadeiras e secretárias</a></li>
+                      <li><a href="product.html?cat=gaming" class="dropdown-item">Todos</a></li>
+                      <li><a href="product.html?cat=gaming&sub=Consolas" class="dropdown-item">Consolas</a></li>
+                      <li><a href="product.html?cat=gaming&sub=Jogos" class="dropdown-item">Jogos</a></li>
+                      <li><a href="product.html?cat=gaming&sub=Comandos" class="dropdown-item">Comandos</a></li>
+                      <li><a href="product.html?cat=gaming&sub=Cadeiras" class="dropdown-item">Cadeiras</a></li>
                     </ul>
                   </li>
 
-                  <!-- Outros -->
                   <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" role="button" id="Outros" data-bs-toggle="dropdown"
-                      aria-expanded="false">
+                    <a class="nav-link dropdown-toggle" role="button" id="Outros" data-bs-toggle="dropdown" aria-expanded="false">
                       Outros
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="Outros">
-                      <li><a href="index.html" class="dropdown-item">Todos</a></li>
-                      <li><a href="index.html" class="dropdown-item">naosei</a></li>
-                      <li><a href="index.html" class="dropdown-item">naosei</a></li>
-                      <li><a href="index.html" class="dropdown-item">naosei</a></li>
-                      <li><a href="index.html" class="dropdown-item">naosei</a></li>
-                      <li><a href="index.html" class="dropdown-item">naosei</a></li>
+                      <li><a href="product.html?cat=outros" class="dropdown-item">Todos</a></li>
+                      <li><a href="product.html?cat=outros&sub=Cabos" class="dropdown-item">Cabos</a></li>
+                      <li><a href="product.html?cat=outros&sub=Pilhas" class="dropdown-item">Pilhas</a></li>
                     </ul>
                   </li>
-
                 </ul>
               </div>
 

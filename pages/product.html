@@ -220,9 +220,8 @@
 
                 <div class="col-sm-6 offset-sm-2 offset-md-0 col-lg-5 d-none d-lg-block">
                     <div class="search-bar bg-light p-2 my-2 rounded-4 d-flex align-items-center gap-2">
-                        <form id="search-form" class="flex-grow-1 m-0" action="product-profile.html" method="post">
-                            <input type="text" class="form-control border-0 bg-transparent"
-                                placeholder="Pesquisa mais de 20,000 produtos" />
+                        <form id="search-form" class="flex-grow-1 m-0" action="product.html" method="GET">
+                            <input type="text" name="query" class="form-control border-0 bg-transparent" placeholder="Pesquisa mais de 20,000 produtos">
                         </form>
 
                         <span class="d-flex align-items-center">
@@ -369,58 +368,27 @@
 
                 <div class="col-md-9">
                     <div class="bootstrap-tabs product-tabs">
-                        <div class="tabs-header d-flex justify-content-between border-bottom mb-5">
-                            <h3>Produtos disponíveis</h3>
-
+                        
+                      <div class="tabs-header border-bottom mb-4">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap g-3">
+                            <h3 class="section-title mb-0">Produtos disponíveis</h3>
+                            
                             <nav>
-                                <div class="nav nav-tabs" id="nav-tab" role="tablist">
-
-                                    <a href="#" class="nav-link text-uppercase fs-6 active" id="nav-all-tab"
-                                        data-bs-toggle="tab" data-bs-target="#nav-all" role="tab"
-                                        aria-controls="nav-all" aria-selected="true">
-                                        Todos
-                                    </a>
-
-                                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-eletrodomesticos-tab"
-                                        data-bs-toggle="tab" data-bs-target="#nav-eletrodomesticos" role="tab"
-                                        aria-controls="nav-eletrodomesticos" aria-selected="false">
-                                        Eletrodomésticos
-                                    </a>
-
-                                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-informatica-tab"
-                                        data-bs-toggle="tab" data-bs-target="#nav-informatica" role="tab"
-                                        aria-controls="nav-informatica" aria-selected="false">
-                                        Informática
-                                    </a>
-
-                                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-smartphones-tab"
-                                        data-bs-toggle="tab" data-bs-target="#nav-smartphones" role="tab"
-                                        aria-controls="nav-smartphones" aria-selected="false">
-                                        Smartphones e Acessórios
-                                    </a>
-
-                                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-imagem-tab"
-                                        data-bs-toggle="tab" data-bs-target="#nav-imagem" role="tab"
-                                        aria-controls="nav-imagem" aria-selected="false">
-                                        Imagem e Som
-                                    </a>
-
-                                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-jogos-tab"
-                                        data-bs-toggle="tab" data-bs-target="#nav-jogos" role="tab"
-                                        aria-controls="nav-jogos" aria-selected="false">
-                                        Gaming
-                                    </a>
-
-                                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-outros-tab"
-                                        data-bs-toggle="tab" data-bs-target="#nav-outros" role="tab"
-                                        aria-controls="nav-outros" aria-selected="false">
-                                        Outros
-                                    </a>
-
+                                <div class="nav nav-tabs border-0" id="nav-tab" role="tablist">
+                                    <a href="#" class="nav-link text-uppercase fs-6 active" id="nav-all-tab" data-bs-toggle="tab" data-bs-target="#nav-all" role="tab">Todos</a>
+                                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-eletrodomesticos-tab" data-bs-toggle="tab" data-bs-target="#nav-eletrodomesticos" role="tab">Eletrodomésticos</a>
+                                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-informatica-tab" data-bs-toggle="tab" data-bs-target="#nav-informatica" role="tab">Informática</a>
+                                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-smartphones-tab" data-bs-toggle="tab" data-bs-target="#nav-smartphones" role="tab">Smartphones</a>
+                                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-imagem-tab" data-bs-toggle="tab" data-bs-target="#nav-imagem" role="tab">Imagem e Som</a>
+                                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-gaming-tab" data-bs-toggle="tab" data-bs-target="#nav-gaming" role="tab">Gaming</a>
+                                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-outros-tab" data-bs-toggle="tab" data-bs-target="#nav-outros" role="tab">Outros</a>
                                 </div>
                             </nav>
                         </div>
 
+                        <div id="sub-filter-container" class="py-3 d-flex flex-wrap gap-2">
+                            </div>
+                      </div>
                         <div class="tab-content" id="nav-tabContent">
 
                             <div class="tab-pane fade show active" id="nav-all" role="tabpanel" aria-labelledby="nav-all-tab">
@@ -451,9 +419,9 @@
                                 <div id="grid-smartphones" class="row row-cols-1 row-cols-md-3 g-4 pt-4"></div>
                             </div>
 
-                            <div class="tab-pane fade" id="nav-jogos" role="tabpanel">
-                                <div id="grid-gaming" class="row row-cols-1 row-cols-md-3 g-4 pt-4"></div>
-                            </div>
+                            <div class="tab-pane fade" id="nav-gaming" role="tabpanel">
+                            <div id="grid-gaming" class="row row-cols-1 row-cols-md-3 g-4 pt-4"></div>
+                        </div>
 
                             <div class="tab-pane fade" id="nav-imagem" role="tabpanel">
                                 <div id="grid-imagem" class="row row-cols-1 row-cols-md-3 g-4 pt-4"></div>

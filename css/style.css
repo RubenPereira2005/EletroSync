@@ -1418,3 +1418,41 @@ header .row.border-bottom {
     border-top: 1px solid #eee;
     padding-top: 2rem;
 }
+
+/* Estilo das Subcategorias (Pills) */
+.btn-sub {
+    border-radius: 50px; /* Formato de pílula */
+    padding: 6px 18px;
+    font-size: 0.85rem;
+    border: 1px solid #e0e0e0;
+    background-color: #ffffff;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-sub:hover {
+    background-color: #f8f9fa;
+    border-color: #bbb;
+}
+
+.btn-sub.active {
+    background-color: #ffc107; /* Cor de destaque (amarelo/laranja) */
+    border-color: #ffc107;
+    color: #000;
+    font-weight: 600;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Ajuste para as abas não terem a linha feia do Bootstrap se quiseres algo mais clean */
+.product-tabs .nav-tabs .nav-link {
+    border: none;
+    padding: 10px 15px;
+    color: #999;
+}
+
+.product-tabs .nav-tabs .nav-link.active {
+    color: #000;
+    border-bottom: 2px solid #ffc107; /* Linha por baixo da tab ativa */
+    background: none;
+}
