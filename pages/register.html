@@ -1,95 +1,143 @@
 <!DOCTYPE html>
 <html lang="pt">
-
 <head>
-  <title>EletroSync - Registo</title>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registo — EletroSync</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" type="text/css" href="css/vendor.css">
-  <link rel="stylesheet" type="text/css" href="css/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="css/design-system.css">
+
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            background: linear-gradient(135deg, var(--es-primary-subtle) 0%, var(--es-primary-light) 100%);
+        }
+        .auth-header { padding: 24px 0; text-align: center; }
+        .auth-header img { height: 44px; }
+
+        .auth-main { flex: 1; display: flex; align-items: center; padding: 24px 0; }
+
+        .auth-card {
+            background: var(--es-white);
+            border-radius: var(--es-radius-xl);
+            box-shadow: var(--es-shadow-xl);
+            padding: 40px;
+            max-width: 480px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .auth-card h1 { font-size: 1.5rem; margin: 0 0 8px; text-align: center; }
+        .auth-card .subtitle { color: var(--es-text-muted); text-align: center; margin-bottom: 32px; font-size: 0.9375rem; }
+
+        .auth-card .form-label { font-size: 0.875rem; font-weight: 600; color: var(--es-gray-700); margin-bottom: 6px; }
+        .auth-card .form-control {
+            padding: 12px 16px; font-size: 0.9375rem;
+            border: 1.5px solid var(--es-gray-300);
+            border-radius: var(--es-radius-md);
+            transition: all var(--es-transition);
+        }
+        .auth-card .form-control:focus { border-color: var(--es-primary); box-shadow: var(--es-shadow-focus); }
+
+        .pw-strength-container {
+            height: 4px; background: var(--es-gray-200);
+            border-radius: var(--es-radius-full);
+            margin-top: 8px; overflow: hidden;
+        }
+        .pw-strength-bar {
+            height: 100%; width: 0%;
+            transition: all var(--es-transition);
+            border-radius: var(--es-radius-full);
+        }
+
+        .auth-footer {
+            text-align: center; margin-top: 24px; font-size: 0.875rem; color: var(--es-text-muted);
+        }
+        .auth-footer a { color: var(--es-primary); font-weight: 700; text-decoration: none; }
+        .auth-footer a:hover { text-decoration: underline; }
+
+        .hidden { display: none !important; }
+
+        .confirm-icon { font-size: 56px; color: var(--es-primary); margin-bottom: 16px; }
+
+        @media (max-width: 480px) { .auth-card { padding: 28px 20px; } }
+    </style>
 </head>
+<body>
 
-<body class="auth-body">
+<header class="auth-header">
+    <a href="index.html"><img src="images/logo3.png" alt="EletroSync"></a>
+</header>
 
-  <header class="py-3 bg-white shadow-sm" style="background: rgba(255,255,255,0.9); backdrop-filter: blur(5px);">
-    <div class="container d-flex justify-content-center">
-      <a href="index.html">
-        <img src="images/logo3.png" alt="logo" class="img-fluid" style="height: 50px;">
-      </a>
-    </div>
-  </header>
-
-  <section class="py-5 flex-grow-1 d-flex align-items-center">
+<main class="auth-main">
     <div class="container">
-      
-      <!-- Painel de Registo -->
-      <div id="register-view" class="glass-auth-container">
-        <h3 class="text-center mb-2 fw-bold">Criar uma Conta</h3>
-        <p class="text-muted text-center mb-4">Junte-se à EletroSync para as melhores ofertas.</p>
-        
-        <form id="register-form">
-          <div class="mb-3">
-            <label for="name" class="form-label fw-semibold">Nome Completo</label>
-            <input type="text" class="form-control" id="name" required placeholder="Qual o seu nome?">
-          </div>
 
-          <div class="mb-3">
-            <label for="email" class="form-label fw-semibold">Email</label>
-            <input type="email" class="form-control" id="email" required placeholder="exemplo@email.com">
-          </div>
-          
-          <div class="mb-3">
-            <label for="password" class="form-label fw-semibold">Palavra-passe</label>
-            <input type="password" class="form-control" id="password" required placeholder="Crie uma palavra-passe">
-            <!-- Barra de força -->
-            <div class="pw-strength-container">
-              <div id="pw-bar" class="pw-strength-bar"></div>
-            </div>
-            <div id="pw-text" class="text-end" style="color: #6c757d; font-size: 0.8rem; margin-top: 4px;">Força da password</div>
-          </div>
+        <!-- Painel de Registo -->
+        <div id="register-view" class="auth-card">
+            <h1>Criar uma conta</h1>
+            <p class="subtitle">Junta-te à EletroSync para acederes às melhores ofertas.</p>
 
-          <div class="mb-4">
-            <label for="confirm-password" class="form-label fw-semibold">Confirmar palavra-passe</label>
-            <input type="password" class="form-control" id="confirm-password" required placeholder="Repita a palavra-passe">
-            <div class="invalid-feedback">As passwords não coincidem.</div>
-          </div>
+            <form id="register-form">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Nome completo</label>
+                    <input type="text" class="form-control" id="name" required placeholder="O teu nome">
+                </div>
 
-          <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm" id="register-btn">Registar Gratuitamente</button>
-          </div>
-          
-          <div class="text-center mt-4">
-            Já tem conta? <a href="login.html" class="text-primary text-decoration-none fw-bold">Entrar agora</a>.
-          </div>
-        </form>
-      </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" required placeholder="exemplo@email.com">
+                </div>
 
-      <!-- Painel de Confirmação de Email (Escondido inicialmente) -->
-      <div id="confirm-view" class="glass-auth-container hidden text-center">
-        <i class="fa-regular fa-envelope-open confirm-icon"></i>
-        <h3 class="fw-bold mb-3">Verifique a sua caixa de entrada</h3>
-        <p class="text-muted mb-4">Enviámos um link de verificação para o seu email. Por favor, clique no link e de seguida pressione o botão abaixo para continuar, sem precisar de fazer login novamente.</p>
-        
-        <div class="d-grid gap-2 mb-3">
-          <button type="button" class="btn btn-success btn-lg rounded-pill fw-bold shadow-sm" id="verify-done-btn">Já confirmei o email</button>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Palavra-passe</label>
+                    <input type="password" class="form-control" id="password" required placeholder="Cria uma palavra-passe">
+                    <div class="pw-strength-container">
+                        <div id="pw-bar" class="pw-strength-bar"></div>
+                    </div>
+                    <div id="pw-text" class="text-end small text-muted mt-1">Força da palavra-passe</div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="confirm-password" class="form-label">Confirmar palavra-passe</label>
+                    <input type="password" class="form-control" id="confirm-password" required placeholder="Repete a palavra-passe">
+                    <div class="invalid-feedback">As palavras-passe não coincidem.</div>
+                </div>
+
+                <button type="submit" class="es-btn es-btn-primary es-btn-lg w-100" id="register-btn">
+                    Registar gratuitamente
+                </button>
+            </form>
+
+            <p class="auth-footer">
+                Já tens conta? <a href="login.html">Inicia sessão</a>
+            </p>
         </div>
-        
-        <div class="mt-4">
-          <a href="login.html" class="text-muted text-decoration-none" style="font-size: 0.9em;">Avançar para o login tradicional</a>
-        </div>
-      </div>
 
+        <!-- Painel de confirmação de email (oculto inicialmente) -->
+        <div id="confirm-view" class="auth-card hidden text-center">
+            <i class="fa-regular fa-envelope-open confirm-icon"></i>
+            <h1>Verifica a tua caixa de entrada</h1>
+            <p class="subtitle">Enviámos um link de verificação para o teu email. Clica no link e depois pressiona o botão abaixo.</p>
+
+            <button type="button" class="es-btn es-btn-primary es-btn-lg w-100" id="verify-done-btn">
+                Já confirmei o email
+            </button>
+
+            <p class="auth-footer">
+                <a href="login.html" style="color: var(--es-text-muted); font-weight: 500;">Avançar para o login</a>
+            </p>
+        </div>
     </div>
-  </section>
+</main>
 
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="js/auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/auth.js"></script>
 </body>
-
 </html>
