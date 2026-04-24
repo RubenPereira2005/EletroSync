@@ -99,29 +99,33 @@
         </div>
     </div>
 
+    <script src="js/favorites.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
+        let cachedFavorites = [];
+
+        async function renderFavorites() {
             const favList = document.getElementById('favList');
             const emptyMsg = document.getElementById('emptyMsg');
-            
-            // Carregar favoritos do localStorage
-            let favorites = JSON.parse(localStorage.getItem('myFavorites')) || [];
 
-            if (favorites.length === 0) {
+            cachedFavorites = await window.Favorites.getFavorites();
+
+            if (cachedFavorites.length === 0) {
+                favList.innerHTML = '';
                 emptyMsg.classList.remove('d-none');
                 return;
             }
 
-            favList.innerHTML = favorites.map(product => {
-                // 1. Lógica para garantir que pegamos o preço mais baixo, mesmo que não esteja ordenado
-                const prices = product.shops.map(s => parseFloat(s.price));
-                const minPrice = Math.min(...prices);
+            emptyMsg.classList.add('d-none');
+
+            favList.innerHTML = cachedFavorites.map(product => {
+                const prices = (product.shops || []).map(s => parseFloat(s.price));
+                const minPrice = prices.length ? Math.min(...prices) : 0;
 
                 return `
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-12 col-sm-6 col-lg-4">
                         <div class="transition-hover p-4">
                             <div class="mb-2">
-                                <span class="badge" style="font-size: 10px;">${product.category}</span>
+                                <span class="badge" style="font-size: 10px;">${product.category || ''}</span>
                             </div>
 
                             <div class="text-center py-3">
@@ -131,22 +135,24 @@
                             <div class="product-content mt-3">
                                 <div class="d-flex align-items-center gap-1 mb-1">
                                     <i class="fa-solid fa-star premium-star"></i>
-                                    <span class="small fw-bold">${product.rating}</span>
+                                    <span class="small fw-bold">${product.rating || ''}</span>
                                 </div>
-                                
+
                                 <h5 class="product-title mb-3">${product.name}</h5>
-                                
+
                                 <div class="d-flex justify-content-between align-items-end mt-auto">
                                     <div>
                                         <span class="text-muted d-block" style="font-size: 11px;">O preço mais baixo</span>
                                         <span class="fw-bold text-dark fs-4">${minPrice.toFixed(2)}€</span>
                                     </div>
-                                    
+
                                     <div class="card-actions">
-                                        <button class="btn btn-outline-danger btn-sm rounded-circle me-1" onclick="removeFav('${product.name}')" title="Remover">
+                                        <button class="btn btn-outline-danger btn-sm rounded-circle me-1"
+                                                onclick="removeFav('${encodeURIComponent(product.name)}')" title="Remover">
                                             <i class="fa-solid fa-trash-can"></i>
                                         </button>
-                                        <button class="btn btn-dark btn-sm rounded-5 px-3" onclick="viewProduct('${product.name}')">
+                                        <button class="btn btn-dark btn-sm rounded-5 px-3"
+                                                onclick="viewProduct('${encodeURIComponent(product.name)}')">
                                             Ver Lojas
                                         </button>
                                     </div>
@@ -156,23 +162,23 @@
                     </div>
                 `;
             }).join('');
-        });
-
-        // Função para remover um favorito
-        function removeFav(name) {
-            let favorites = JSON.parse(localStorage.getItem('myFavorites')) || [];
-            favorites = favorites.filter(p => p.name !== name);
-            localStorage.setItem('myFavorites', JSON.stringify(favorites));
-            location.reload(); // Recarrega para atualizar a lista
         }
 
-        // Função para ir para a página do produto
-        function viewProduct(name) {
-            let favorites = JSON.parse(localStorage.getItem('myFavorites')) || [];
-            const prod = favorites.find(p => p.name === name);
+        async function removeFav(encodedName) {
+            const name = decodeURIComponent(encodedName);
+            await window.Favorites.removeFavorite(name);
+            await renderFavorites();
+        }
+
+        function viewProduct(encodedName) {
+            const name = decodeURIComponent(encodedName);
+            const prod = cachedFavorites.find(p => p.name === name);
+            if (!prod) return;
             localStorage.setItem('selectedProduct', JSON.stringify(prod));
             window.location.href = 'single-product.html';
         }
+
+        document.addEventListener('DOMContentLoaded', renderFavorites);
     </script>
 </body>
 </html>

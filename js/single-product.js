@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     const data = JSON.parse(localStorage.getItem('selectedProduct'));
 
     if (!data) {
@@ -12,17 +12,14 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('prodRating').innerText = data.rating;
     document.getElementById('breadcrumbCat').innerText = data.category;
 
-    // --- LOGICA DE VERIFICAÇÃO INICIAL DOS FAVORITOS ---
+    // ── Estado inicial do botão de favoritos ───────────────────────────────
     const favBtn = document.getElementById('favBtn');
     const icon = favBtn.querySelector('i');
-    let favorites = JSON.parse(localStorage.getItem('myFavorites')) || [];
 
-    // Se o produto já estiver nos favoritos, ativa o estado visual
-    if (favorites.some(p => p.name === data.name)) {
+    if (await window.Favorites.isFavorite(data.name)) {
         icon.classList.replace('fa-regular', 'fa-solid');
         favBtn.classList.add('active');
     }
-    // --------------------------------------------------
 
     // Ordenar lojas pelo preço
     const sortedShops = data.shops.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
@@ -48,27 +45,39 @@ document.addEventListener("DOMContentLoaded", () => {
         </tr>
     `).join('');
 
-    // Evento de Clique para Adicionar/Remover
-    favBtn.addEventListener('click', function() {
-        // Recarregar a lista atualizada para garantir que não sobrescrevemos dados
-        let currentFavorites = JSON.parse(localStorage.getItem('myFavorites')) || [];
-        
-        if (icon.classList.contains('fa-regular')) {
-            // ADICIONAR
+    // ── Clique: adicionar/remover dos favoritos ────────────────────────────
+    favBtn.addEventListener('click', async function () {
+        const adding = icon.classList.contains('fa-regular');
+
+        // Atualiza UI imediatamente (optimistic update)
+        if (adding) {
             icon.classList.replace('fa-regular', 'fa-solid');
             this.classList.add('active');
-            
-            if (!currentFavorites.some(p => p.name === data.name)) {
-                currentFavorites.push(data);
-                localStorage.setItem('myFavorites', JSON.stringify(currentFavorites));
-            }
+            await window.Favorites.addFavorite(data);
         } else {
-            // REMOVER
             icon.classList.replace('fa-solid', 'fa-regular');
             this.classList.remove('active');
-            
-            currentFavorites = currentFavorites.filter(p => p.name !== data.name);
-            localStorage.setItem('myFavorites', JSON.stringify(currentFavorites));
+            await window.Favorites.removeFavorite(data.name);
         }
     });
+
+    // ── Clique: adicionar ao carrinho ───────────────────────────────────────
+    const addToCartBtn = document.getElementById('addToCartBtn');
+    if (addToCartBtn) {
+        addToCartBtn.addEventListener('click', function () {
+            window.Cart.add(data, 1);
+
+            // Feedback visual no botão
+            const originalHtml = this.innerHTML;
+            this.innerHTML = '<i class="fa-solid fa-check me-2"></i>Adicionado!';
+            this.classList.remove('btn-primary');
+            this.classList.add('btn-success');
+
+            setTimeout(() => {
+                this.innerHTML = originalHtml;
+                this.classList.remove('btn-success');
+                this.classList.add('btn-primary');
+            }, 1500);
+        });
+    }
 });

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt">
 
 <head>
     <title>EletroSync</title>
@@ -105,87 +105,8 @@
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
-    <div class="order-md-last">
-
-      <h4 class="d-flex justify-content-between align-items-center mb-3">
-        <span class="text-primary">Carrinho</span>
-        <span class="badge bg-primary rounded-pill">3</span>
-      </h4>
-
-      <ul class="list-group mb-3">
-
-        <li class="list-group-item d-flex justify-content-between lh-sm">
-          <div>
-            <h6 class="my-0">Portátil Lenovo IdeaPad 3</h6>
-            <small class="text-body-secondary">Ryzen 5 • 8GB RAM • 512GB SSD</small>
-          </div>
-          <span class="text-body-secondary">599€</span>
-        </li>
-
-        <li class="list-group-item d-flex justify-content-between lh-sm">
-          <div>
-            <h6 class="my-0">Smartphone Samsung Galaxy A54</h6>
-            <small class="text-body-secondary">128GB • 5G • Dual SIM</small>
-          </div>
-          <span class="text-body-secondary">379€</span>
-        </li>
-
-        <li class="list-group-item d-flex justify-content-between lh-sm">
-          <div>
-            <h6 class="my-0">Headphones Bluetooth Sony WH-CH520</h6>
-            <small class="text-body-secondary">Wireless • Autonomia 50h</small>
-          </div>
-          <span class="text-body-secondary">49€</span>
-        </li>
-
-        <li class="list-group-item d-flex justify-content-between">
-          <span>Total</span>
-          <strong>1 027€</strong>
-        </li>
-
-      </ul>
-
-
-      <div class="card mb-3 border-success">
-        <div class="card-body">
-          <h6 class="card-title text-success">Melhor opção</h6>
-          <p class="mb-1"><strong>Worten</strong></p>
-          <p class="mb-0 text-success">Total: 1 027€</p>
+            <!-- Preenchido dinamicamente por js/cart.js -->
         </div>
-      </div>
-
-
-      <div class="mb-3">
-        <small class="text-muted">Outras lojas:</small>
-        <ul class="list-group mt-2">
-          <li class="list-group-item d-flex justify-content-between">
-            <span>Fnac</span>
-            <span>1 050€</span>
-          </li>
-          <li class="list-group-item d-flex justify-content-between">
-            <span>Amazon</span>
-            <span>1 045€</span>
-          </li>
-        </ul>
-      </div>
-
-
-      <button class="w-100 btn btn-success btn-lg">
-        Ir para a melhor loja (Worten)
-      </button>
-
-
-      <div class="d-grid gap-2 mt-2">
-        <button class="btn btn-outline-secondary btn-sm">
-          Ver na Fnac
-        </button>
-        <button class="btn btn-outline-secondary btn-sm">
-          Ver na Amazon
-        </button>
-      </div>
-
-    </div>
-  </div>
     </div>
 
     <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasSearch"
@@ -196,12 +117,12 @@
         <div class="offcanvas-body">
             <div class="order-md-last">
                 <h4 class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="text-primary">Search</span>
+                    <span class="text-primary">Pesquisa</span>
                 </h4>
                 <form role="search" action="product-profile.html" method="get" class="d-flex mt-3 gap-0">
                     <input class="form-control rounded-start rounded-0 bg-light" type="email"
-                        placeholder="What are you looking for?" aria-label="What are you looking for?">
-                    <button class="btn btn-dark rounded-end rounded-0" type="submit">Search</button>
+                        placeholder="O que procuras?" aria-label="O que procuras?">
+                    <button class="btn btn-dark rounded-end rounded-0" type="submit">Pesquisar</button>
                 </form>
             </div>
         </div>
@@ -284,7 +205,7 @@
                         <button class="border-0 bg-transparent d-flex flex-column gap-2 lh-1" type="button"
                             data-bs-toggle="offcanvas" data-bs-target="#offcanvasCart" aria-controls="offcanvasCart">
                             <span class="fs-6 text-muted dropdown-toggle">Carrinho</span>
-                            <span class="cart-total fs-5 fw-bold">$1290.00</span>
+                            <span class="cart-total fs-5 fw-bold">0.00€</span>
                         </button>
                     </div>
                 </div>
@@ -379,9 +300,9 @@
 
                         <div class="social-links mt-4">
                             <ul class="d-flex list-unstyled gap-2">
-                                <li><a href="#" class="btn btn-outline-light">FB</a></li>
-                                <li><a href="#" class="btn btn-outline-light">IG</a></li>
-                                <li><a href="#" class="btn btn-outline-light">YT</a></li>
+                                <li><a href="#" class="btn btn-outline-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width:38px;height:38px;" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a></li>
+                                <li><a href="#" class="btn btn-outline-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width:38px;height:38px;" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a></li>
+                                <li><a href="#" class="btn btn-outline-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width:38px;height:38px;" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a></li>
                             </ul>
                         </div>
                     </div>
@@ -450,7 +371,7 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-6 copyright">
-                    <p>© 2026 EletroSync. All rights reserved.</p>
+                    <p>© 2026 EletroSync. Todos os direitos reservados.</p>
                 </div>
             </div>
         </div>
@@ -462,6 +383,7 @@
         crossorigin="anonymous"></script>
     <script src="js/plugins.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/cart.js"></script>
     <script src="js/script.js"></script>
 </body>
 

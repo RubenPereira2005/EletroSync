@@ -16,6 +16,12 @@ app.use(express.static(path.join(__dirname, 'pages'), { extensions: ['html'] }))
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
+const favoritesRoutes = require('./routes/favorites');
+app.use('/api/favorites', favoritesRoutes);
+
+const cartRoutes = require('./routes/cart');
+app.use('/api/cart', cartRoutes);
+
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor a correr em http://localhost:${PORT}`);
