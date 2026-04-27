@@ -100,6 +100,9 @@ function renderProduct(p) {
       <div class="col">
         <div class="product-item">
           ${discountBadge}
+          <button class="product-fav-btn floating-fav" data-product="${escapeAttr(p.name)}" title="Adicionar aos favoritos" aria-label="Favorito">
+            <i class="fa-regular fa-heart"></i>
+          </button>
           <figure>
             <img src="${p.image}" alt="${escapeAttr(p.name)}" loading="lazy"
                  onerror="this.onerror=null;this.src='${fallbackImg}';">
@@ -137,6 +140,27 @@ function escapeAttr(s) {
 }
 let swiperInstance; // Variável global para guardar o carrossel
 
+async function initFavoritesUI() {
+    try {
+        if (!window.Favorites) return;
+        const favs = await window.Favorites.getFavorites();
+        const favNames = favs.map(f => f.name);
+        
+        document.querySelectorAll('.product-fav-btn').forEach(btn => {
+            const pname = btn.getAttribute('data-product');
+            if (favNames.includes(pname)) {
+                btn.classList.add('active');
+                const icon = btn.querySelector('i');
+                icon.classList.replace('fa-regular', 'fa-solid');
+            } else {
+                btn.classList.remove('active');
+                const icon = btn.querySelector('i');
+                icon.classList.replace('fa-solid', 'fa-regular');
+            }
+        });
+    } catch (e) { console.error(e); }
+}
+
 function renderTo(containerId, list) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -151,10 +175,12 @@ function renderTo(containerId, list) {
         // Pequeno delay para garantir que o HTML foi renderizado antes do Swiper agir
         setTimeout(() => {
             initSwiper();
+            initFavoritesUI();
         }, 100); 
     } else {
         container.className = "row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3 pt-4 pb-5";
         container.innerHTML = list.map(renderProduct).join("");
+        setTimeout(initFavoritesUI, 50);
     }
 }
 
@@ -391,5 +417,44 @@ document.addEventListener('click', function(e) {
     if (productData) {
         localStorage.setItem('selectedProduct', JSON.stringify(productData));
         window.location.href = 'single-product.html';
+    }
+});
+
+// Listener para o botão de favorito nos cards
+document.addEventListener('click', async function(e) {
+    const favBtn = e.target.closest('.product-fav-btn');
+    if (favBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const productName = favBtn.getAttribute('data-product');
+        const icon = favBtn.querySelector('i');
+        const isAdding = icon.classList.contains('fa-regular');
+        
+        if (isAdding && window.Favorites && !window.Favorites.isLoggedIn()) {
+            if (window.Favorites.showAuthPopup) window.Favorites.showAuthPopup();
+            return;
+        }
+
+        // Pequena animação
+        icon.classList.add('heart-beat');
+        setTimeout(() => icon.classList.remove('heart-beat'), 300);
+
+        if (isAdding) {
+            icon.classList.replace('fa-regular', 'fa-solid');
+            favBtn.classList.add('active');
+            
+            // Procurar dados do produto
+            const productData = products.find(p => p.name === productName);
+            if (productData && window.Favorites) {
+                await window.Favorites.addFavorite(productData);
+            }
+        } else {
+            icon.classList.replace('fa-solid', 'fa-regular');
+            favBtn.classList.remove('active');
+            if (window.Favorites) {
+                await window.Favorites.removeFavorite(productName);
+            }
+        }
     }
 });

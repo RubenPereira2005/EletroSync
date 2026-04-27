@@ -81,6 +81,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     favBtn.addEventListener('click', async function () {
         const adding = favIcon.classList.contains('fa-regular');
+        
+        if (adding && window.Favorites && !window.Favorites.isLoggedIn()) {
+            if (window.Favorites.showAuthPopup) window.Favorites.showAuthPopup();
+            return;
+        }
+        
+        favIcon.classList.add('heart-beat');
+        setTimeout(() => favIcon.classList.remove('heart-beat'), 300);
+
         if (adding) {
             favIcon.classList.replace('fa-regular', 'fa-solid');
             this.classList.add('active');
