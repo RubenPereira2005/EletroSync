@@ -230,13 +230,11 @@
 
         if (items.length === 0) {
             body.innerHTML = `
-                <div class="order-md-last text-center py-5">
-                    <svg width="64" height="64" viewBox="0 0 24 24" class="text-muted mb-3" style="opacity:.5">
-                        <path fill="currentColor" d="M7 18a2 2 0 1 0 0 4a2 2 0 0 0 0-4m10 0a2 2 0 1 0 0 4a2 2 0 0 0 0-4M7.16 14l.03-.12l.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.86-7.01L19.42 3H5.21L4.27 1H1v2h2l3.6 7.59L5.25 13c-.16.28-.25.61-.25.96c0 1.1.9 2.04 2 2.04h12v-2H7.42c-.13 0-.25-.11-.26-.24Z"/>
-                    </svg>
-                    <h5 class="text-muted">O teu carrinho está vazio</h5>
-                    <p class="text-muted small">Adiciona produtos para começares a comparar preços.</p>
-                    <a href="product.html" class="btn btn-primary rounded-5 px-4 mt-2">Explorar Produtos</a>
+                <div class="cart-empty">
+                    <div class="cart-empty-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+                    <h5>O teu carrinho está vazio</h5>
+                    <p>Adiciona produtos para começares a comparar preços entre lojas.</p>
+                    <a href="product.html" class="es-btn es-btn-primary">Explorar Produtos</a>
                 </div>
             `;
             return;
@@ -246,28 +244,23 @@
             const qty = item.quantity || 1;
             const unit = getUnitPrice(item);
             return `
-                <li class="list-group-item lh-sm">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <div class="flex-grow-1 pe-2">
-                            <h6 class="my-0">${escapeHtml(item.name)}</h6>
-                            <small class="text-body-secondary">${formatPrice(unit)} por unidade</small>
-                        </div>
-                        <span class="fw-bold">${formatPrice(unit * qty)}</span>
+                <div class="cart-item">
+                    <div class="cart-item-top">
+                        <h6 class="cart-item-name">${escapeHtml(item.name)}</h6>
+                        <span class="cart-item-total">${formatPrice(unit * qty)}</span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="btn-group btn-group-sm" role="group">
-                            <button type="button" class="btn btn-outline-secondary"
-                                    data-cart-qty="-" data-cart-name="${encodeURIComponent(item.name)}">−</button>
-                            <span class="btn btn-outline-secondary disabled" style="min-width:42px;">${qty}</span>
-                            <button type="button" class="btn btn-outline-secondary"
-                                    data-cart-qty="+" data-cart-name="${encodeURIComponent(item.name)}">+</button>
+                    <div class="cart-item-unit">${formatPrice(unit)} / un.</div>
+                    <div class="cart-item-controls">
+                        <div class="cart-qty">
+                            <button type="button" class="cart-qty-btn" data-cart-qty="-" data-cart-name="${encodeURIComponent(item.name)}" aria-label="Diminuir">−</button>
+                            <span class="cart-qty-value">${qty}</span>
+                            <button type="button" class="cart-qty-btn" data-cart-qty="+" data-cart-name="${encodeURIComponent(item.name)}" aria-label="Aumentar">+</button>
                         </div>
-                        <button class="btn btn-sm btn-link text-danger p-0 text-decoration-none"
-                                data-cart-remove="${encodeURIComponent(item.name)}">
-                            <i class="fa-solid fa-trash-can"></i> Remover
+                        <button class="cart-item-remove" data-cart-remove="${encodeURIComponent(item.name)}" title="Remover" aria-label="Remover">
+                            <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </div>
-                </li>
+                </div>
             `;
         }).join('');
 
@@ -277,50 +270,49 @@
         let bestStoreHtml = '';
         if (bestStore) {
             bestStoreHtml = `
-                <div class="card mb-3 border-success">
-                    <div class="card-body">
-                        <h6 class="card-title text-success mb-1">Melhor opção (soma de todos os produtos)</h6>
-                        <p class="mb-1"><strong>${escapeHtml(bestStore.best[0])}</strong></p>
-                        <p class="mb-0 text-success">Total: ${formatPrice(bestStore.best[1])}</p>
+                <div class="cart-best-store">
+                    <div class="cart-best-store-label"><i class="fa-solid fa-trophy"></i> Melhor loja para este carrinho</div>
+                    <div class="cart-best-store-row">
+                        <span class="cart-best-store-name">${escapeHtml(bestStore.best[0])}</span>
+                        <span class="cart-best-store-total">${formatPrice(bestStore.best[1])}</span>
                     </div>
                 </div>
             `;
             if (bestStore.others.length) {
                 bestStoreHtml += `
-                    <div class="mb-3">
-                        <small class="text-muted">Outras lojas:</small>
-                        <ul class="list-group mt-2">
-                            ${bestStore.others.map(([name, val]) => `
-                                <li class="list-group-item d-flex justify-content-between py-2">
-                                    <span>${escapeHtml(name)}</span>
-                                    <span>${formatPrice(val)}</span>
-                                </li>
-                            `).join('')}
-                        </ul>
+                    <div class="cart-other-stores">
+                        <div class="cart-other-stores-label">Outras lojas</div>
+                        ${bestStore.others.map(([name, val]) => `
+                            <div class="cart-other-store-row">
+                                <span>${escapeHtml(name)}</span>
+                                <span>${formatPrice(val)}</span>
+                            </div>
+                        `).join('')}
                     </div>
                 `;
             }
         }
 
         body.innerHTML = `
-            <div class="order-md-last">
-                <h4 class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="text-primary">Carrinho</span>
-                    <span class="badge bg-primary rounded-pill cart-badge">${computeCount(items)}</span>
-                </h4>
+            <div class="cart-wrap">
+                <div class="cart-header">
+                    <span class="cart-header-count">
+                        <span class="cart-count-pill cart-badge">${computeCount(items)}</span>
+                        ${computeCount(items) === 1 ? 'produto' : 'produtos'}
+                    </span>
+                </div>
 
-                <ul class="list-group mb-3">
-                    ${itemsHtml}
-                    <li class="list-group-item d-flex justify-content-between bg-light">
-                        <span class="fw-bold">Total (preço mínimo)</span>
-                        <strong>${formatPrice(total)}</strong>
-                    </li>
-                </ul>
+                <div class="cart-items">${itemsHtml}</div>
+
+                <div class="cart-subtotal">
+                    <span>Subtotal</span>
+                    <strong>${formatPrice(total)}</strong>
+                </div>
 
                 ${bestStoreHtml}
 
-                <button class="w-100 btn btn-outline-danger btn-sm" data-cart-clear>
-                    <i class="fa-solid fa-trash-can me-1"></i> Limpar carrinho
+                <button class="cart-clear-btn" data-cart-clear>
+                    <i class="fa-solid fa-trash-can"></i> Limpar carrinho
                 </button>
             </div>
         `;

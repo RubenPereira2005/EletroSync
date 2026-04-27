@@ -1,390 +1,234 @@
 <!DOCTYPE html>
 <html lang="pt">
-
 <head>
-    <title>EletroSync</title>
+    <title>O meu perfil — EletroSync</title>
     <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="format-detection" content="telephone=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="author" content="">
-    <meta name="keywords" content="">
-    <meta name="description" content="">
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
-    <link rel="stylesheet" type="text/css" href="css/vendor.css">
-    <link rel="stylesheet" type="text/css" href="css/style.css">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="css/design-system.css">
 
+    <style>
+        .profile-hero {
+            background: linear-gradient(135deg, var(--es-primary-subtle) 0%, var(--es-primary-light) 100%);
+            padding: 40px 0;
+            border-bottom: 1px solid var(--es-gray-200);
+        }
+        .profile-hero-inner { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .profile-avatar {
+            width: 80px; height: 80px;
+            background: var(--es-white);
+            border-radius: var(--es-radius-full);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 40px; color: var(--es-primary);
+            box-shadow: var(--es-shadow-md);
+            flex-shrink: 0;
+        }
+        .profile-hero h1 { margin: 0 0 4px; font-size: 1.75rem; }
+        .profile-hero p { margin: 0; color: var(--es-text-muted); }
+
+        .profile-menu {
+            list-style: none; padding: 0; margin: 0;
+            background: var(--es-white);
+            border: 1px solid var(--es-gray-200);
+            border-radius: var(--es-radius-lg);
+            overflow: hidden;
+        }
+        .profile-menu li { border-bottom: 1px solid var(--es-gray-100); }
+        .profile-menu li:last-child { border-bottom: 0; }
+        .profile-menu a {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px;
+            color: var(--es-text);
+            text-decoration: none;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            transition: all var(--es-transition);
+        }
+        .profile-menu a:hover { background: var(--es-gray-50); color: var(--es-dark); }
+        .profile-menu a i.fa-solid:first-child { width: 20px; color: var(--es-text-muted); }
+        .profile-menu a:hover i.fa-solid:first-child { color: var(--es-primary); }
+        .profile-menu li.active a { background: var(--es-primary-subtle); color: var(--es-dark); font-weight: 600; }
+        .profile-menu li.active a i:first-child { color: var(--es-primary); }
+        .profile-menu .chevron { margin-left: auto; color: var(--es-gray-400); font-size: 12px; }
+        .profile-menu .soon {
+            margin-left: auto;
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            padding: 3px 8px; border-radius: var(--es-radius-full);
+            background: var(--es-gray-100); color: var(--es-gray-600);
+            letter-spacing: 0.04em;
+        }
+        .profile-menu a.disabled-link { opacity: .55; cursor: not-allowed; }
+        .profile-menu a.disabled-link:hover { background: transparent; }
+        .profile-menu a.logout { color: var(--es-danger); }
+        .profile-menu a.logout i:first-child { color: var(--es-danger); }
+
+        .data-card {
+            background: var(--es-white);
+            border: 1px solid var(--es-gray-200);
+            border-radius: var(--es-radius-lg);
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        .data-card h3 { font-size: 1.125rem; margin: 0 0 20px; display: flex; align-items: center; gap: 10px; }
+        .data-card h3 i { color: var(--es-primary); }
+
+        .data-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        @media (max-width: 576px) { .data-grid { grid-template-columns: 1fr; } }
+        .data-item label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--es-text-muted);
+            margin-bottom: 4px;
+        }
+        .data-item .value { font-size: 0.9375rem; font-weight: 600; color: var(--es-dark); word-break: break-word; }
+
+        .stat-card {
+            display: flex; align-items: center; gap: 16px;
+            background: var(--es-white);
+            border: 1px solid var(--es-gray-200);
+            border-radius: var(--es-radius-lg);
+            padding: 20px;
+            transition: all var(--es-transition);
+            text-decoration: none;
+            color: inherit;
+            height: 100%;
+        }
+        .stat-card:hover { border-color: var(--es-primary); transform: translateY(-2px); box-shadow: var(--es-shadow-md); color: inherit; }
+        .stat-card.disabled { opacity: .6; cursor: default; }
+        .stat-card.disabled:hover { border-color: var(--es-gray-200); transform: none; box-shadow: none; }
+        .stat-card-icon {
+            width: 48px; height: 48px; flex-shrink: 0;
+            background: var(--es-primary-subtle);
+            border-radius: var(--es-radius-md);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: var(--es-primary);
+        }
+        .stat-card.disabled .stat-card-icon { background: var(--es-gray-100); color: var(--es-gray-500); }
+        .stat-card h4 { font-size: 0.9375rem; margin: 0 0 2px; }
+        .stat-card .stat-value { font-family: var(--es-font-heading); font-size: 1.25rem; font-weight: 800; color: var(--es-dark); }
+    </style>
 </head>
-
 <body>
 
-    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
-        <defs>
-            <symbol xmlns="http://www.w3.org/2000/svg" id="link" viewBox="0 0 24 24">
-                <path fill="currentColor"
-                    d="M12 19a1 1 0 1 0-1-1a1 1 0 0 0 1 1Zm5 0a1 1 0 1 0-1-1a1 1 0 0 0 1 1Zm0-4a1 1 0 1 0-1-1a1 1 0 0 0 1 1Zm-5 0a1 1 0 1 0-1-1a1 1 0 0 0 1 1Zm7-12h-1V2a1 1 0 0 0-2 0v1H8V2a1 1 0 0 0-2 0v1H5a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3Zm1 17a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9h16Zm0-11H4V6a1 1 0 0 1 1-1h1v1a1 1 0 0 0 2 0V5h8v1a1 1 0 0 0 2 0V5h1a1 1 0 0 1 1 1ZM7 15a1 1 0 1 0-1-1a1 1 0 0 0 1 1Zm0 4a1 1 0 1 0-1-1a1 1 0 0 0 1 1Z" />
-            </symbol>
-            <symbol xmlns="http://www.w3.org/2000/svg" id="arrow-right" viewBox="0 0 24 24">
-                <path fill="currentColor"
-                    d="M17.92 11.62a1 1 0 0 0-.21-.33l-5-5a1 1 0 0 0-1.42 1.42l3.3 3.29H7a1 1 0 0 0 0 2h7.59l-3.3 3.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0l5-5a1 1 0 0 0 .21-.33a1 1 0 0 0 0-.76Z" />
-            </symbol>
-            <symbol xmlns="http://www.w3.org/2000/svg" id="category" viewBox="0 0 24 24">
-                <path fill="currentColor"
-                    d="M19 5.5h-6.28l-.32-1a3 3 0 0 0-2.84-2H5a3 3 0 0 0-3 3v13a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-10a3 3 0 0 0-3-3Zm1 13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1h4.56a1 1 0 0 1 .95.68l.54 1.64a1 1 0 0 0 .95.68h7a1 1 0 0 1 1 1Z" />
-            </symbol>
-            <symbol xmlns="http://www.w3.org/2000/svg" id="calendar" viewBox="0 0 24 24">
-                <path fill="currentColor"
-                    d="M19 4h-2V3a1 1 0 0 0-2 0v1H9V3a1 1 0 0 0-2 0v1H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3Zm1 15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-7h16Zm0-9H4V7a1 1 0 0 1 1-1h2v1a1 1 0 0 0 2 0V6h6v1a1 1 0 0 0 2 0V6h2a1 1 0 0 1 1 1Z" />
-            </symbol>
-            <symbol xmlns="http://www.w3.org/2000/svg" id="heart" viewBox="0 0 24 24">
-                <path fill="currentColor"
-                    d="M20.16 4.61A6.27 6.27 0 0 0 12 4a6.27 6.27 0 0 0-8.16 9.48l7.45 7.45a1 1 0 0 0 1.42 0l7.45-7.45a6.27 6.27 0 0 0 0-8.87Zm-1.41 7.46L12 18.81l-6.75-6.74a4.28 4.28 0 0 1 3-7.3a4.25 4.25 0 0 1 3 1.25a1 1 0 0 0 1.42 0a4.27 4.27 0 0 1 6 6.05Z" />
-            </symbol>
-            <symbol xmlns="http://www.w3.org/2000/svg" id="plus" viewBox="0 0 24 24">
-                <path fill="currentColor"
-                    d="M19 11h-6V5a1 1 0 0 0-2 0v6H5a1 1 0 0 0 0 2h6v6a1 1 0 0 0 2 0v-6h6a1 1 0 0 0 0-2Z" />
-            </symbol>
-            <symbol xmlns="http://www.w3.org/2000/svg" id="minus" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M19 11H5a1 1 0 0 0 0 2h14a1 1 0 0 0 0-2Z" />
-            </symbol>
-            <symbol xmlns="http://www.w3.org/2000/svg" id="cart" viewBox="0 0 24 24">
-                <path fill="currentColor"
-                    d="M8.5 19a1.5 1.5 0 1 0 1.5 1.5A1.5 1.5 0 0 0 8.5 19ZM19 16H7a1 1 0 0 1 0-2h8.491a3.013 3.013 0 0 0 2.885-2.176l1.585-5.55A1 1 0 0 0 19 5H6.74a3.007 3.007 0 0 0-2.82-2H3a1 1 0 0 0 0 2h.921a1.005 1.005 0 0 1 .962.725l.155.545v.005l1.641 5.742A3 3 0 0 0 7 18h12a1 1 0 0 0 0-2Zm-1.326-9l-1.22 4.274a1.005 1.005 0 0 1-.963.726H8.754l-.255-.892L7.326 7ZM16.5 19a1.5 1.5 0 1 0 1.5 1.5a1.5 1.5 0 0 0-1.5-1.5Z" />
-            </symbol>
-            <symbol xmlns="http://www.w3.org/2000/svg" id="check" viewBox="0 0 24 24">
-                <path fill="currentColor"
-                    d="M18.71 7.21a1 1 0 0 0-1.42 0l-7.45 7.46l-3.13-3.14A1 1 0 1 0 5.29 13l3.84 3.84a1 1 0 0 0 1.42 0l8.16-8.16a1 1 0 0 0 0-1.47Z" />
-            </symbol>
-            <symbol xmlns="http://www.w3.org/2000/svg" id="trash" viewBox="0 0 24 24">
-                <path fill="currentColor"
-                    d="M10 18a1 1 0 0 0 1-1v-6a1 1 0 0 0-2 0v6a1 1 0 0 0 1 1ZM20 6h-4V5a3 3 0 0 0-3-3h-2a3 3 0 0 0-3 3v1H4a1 1 0 0 0 0 2h1v11a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3V8h1a1 1 0 0 0 0-2ZM10 5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1h-4Zm7 14a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V8h10Zm-3-1a1 1 0 0 0 1-1v-6a1 1 0 0 0-2 0v6a1 1 0 0 0 1 1Z" />
-            </symbol>
-            <symbol xmlns="http://www.w3.org/2000/svg" id="star-outline" viewBox="0 0 15 15">
-                <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                    d="M7.5 9.804L5.337 11l.413-2.533L4 6.674l2.418-.37L7.5 4l1.082 2.304l2.418.37l-1.75 1.793L9.663 11L7.5 9.804Z" />
-            </symbol>
-            <symbol xmlns="http://www.w3.org/2000/svg" id="star-solid" viewBox="0 0 15 15">
-                <path fill="currentColor"
-                    d="M7.953 3.788a.5.5 0 0 0-.906 0L6.08 5.85l-2.154.33a.5.5 0 0 0-.283.843l1.574 1.613l-.373 2.284a.5.5 0 0 0 .736.518l1.92-1.063l1.921 1.063a.5.5 0 0 0 .736-.519l-.373-2.283l1.574-1.613a.5.5 0 0 0-.283-.844L8.921 5.85l-.968-2.062Z" />
-            </symbol>
-            <symbol xmlns="http://www.w3.org/2000/svg" id="search" viewBox="0 0 24 24">
-                <path fill="currentColor"
-                    d="M21.71 20.29L18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.39ZM11 18a7 7 0 1 1 7-7a7 7 0 0 1-7 7Z" />
-            </symbol>
-            <symbol xmlns="http://www.w3.org/2000/svg" id="user" viewBox="0 0 24 24">
-                <path fill="currentColor"
-                    d="M15.71 12.71a6 6 0 1 0-7.42 0a10 10 0 0 0-6.22 8.18a1 1 0 0 0 2 .22a8 8 0 0 1 15.9 0a1 1 0 0 0 1 .89h.11a1 1 0 0 0 .88-1.1a10 10 0 0 0-6.25-8.19ZM12 12a4 4 0 1 1 4-4a4 4 0 0 1-4 4Z" />
-            </symbol>
-            <symbol xmlns="http://www.w3.org/2000/svg" id="close" viewBox="0 0 15 15">
-                <path fill="currentColor"
-                    d="M7.953 3.788a.5.5 0 0 0-.906 0L6.08 5.85l-2.154.33a.5.5 0 0 0-.283.843l1.574 1.613l-.373 2.284a.5.5 0 0 0 .736.518l1.92-1.063l1.921 1.063a.5.5 0 0 0 .736-.519l-.373-2.283l1.574-1.613a.5.5 0 0 0-.283-.844L8.921 5.85l-.968-2.062Z" />
-            </symbol>
-        </defs>
-    </svg>
+<div id="es-header-slot"></div>
 
-    <div class="preloader-wrapper">
-        <div class="preloader">
-        </div>
-    </div>
-
-    <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasCart"
-        aria-labelledby="My Cart">
-        <div class="offcanvas-header justify-content-center">
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body">
-            <!-- Preenchido dinamicamente por js/cart.js -->
-        </div>
-    </div>
-
-    <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasSearch"
-        aria-labelledby="Search">
-        <div class="offcanvas-header justify-content-center">
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body">
-            <div class="order-md-last">
-                <h4 class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="text-primary">Pesquisa</span>
-                </h4>
-                <form role="search" action="product-profile.html" method="get" class="d-flex mt-3 gap-0">
-                    <input class="form-control rounded-start rounded-0 bg-light" type="email"
-                        placeholder="O que procuras?" aria-label="O que procuras?">
-                    <button class="btn btn-dark rounded-end rounded-0" type="submit">Pesquisar</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <header>
-        <div class="container-fluid">
-            <div class="row py-3 border-bottom">
-
-                <div class="col-sm-4 col-lg-3 text-center text-sm-start">
-                    <div class="main-logo">
-                        <a href="index.html">
-                            <img src="images/logo3.png" alt="logo" class="img-fluid">
-                        </a>
-                    </div>
-                </div>
-
-                <div class="col-sm-6 offset-sm-2 offset-md-0 col-lg-5 d-none d-lg-block">
-                    <div class="search-bar bg-light p-2 my-2 rounded-4 d-flex align-items-center gap-2">
-                        <form id="search-form" class="flex-grow-1 m-0" action="product-profile.html" method="post">
-                            <input type="text" class="form-control border-0 bg-transparent"
-                                placeholder="Pesquisa mais de 20,000 produtos" />
-                        </form>
-
-                        <span class="d-flex align-items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                                <path fill="currentColor"
-                                    d="M21.71 20.29L18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.39ZM11 18a7 7 0 1 1 7-7a7 7 0 0 1-7 7Z" />
-                            </svg>
-                        </span>
-                    </div>
-                </div>
-
-                <div
-                    class="col-sm-8 col-lg-4 d-flex justify-content-end gap-5 align-items-center mt-4 mt-sm-0 justify-content-center justify-content-sm-end">
-                    <div class="support-box text-end d-none d-xl-block">
-                        <span class="fs-6 text-muted">Suporte?</span>
-                        <h5 class="mb-0">+351 - 916 788 652</h5>
-                    </div>
-
-                    <ul class="d-flex justify-content-end list-unstyled m-0">
-                        <li>
-                            <a href="#" class="rounded-circle bg-light p-2 mx-1">
-                                <svg width="24" height="24" viewBox="0 0 24 24">
-                                    <use xlink:href="#user"></use>
-                                </svg>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="favorites.html" class="rounded-circle bg-light p-2 mx-1">
-                                <svg width="24" height="24" viewBox="0 0 24 24">
-                                <use xlink:href="#heart"></use>
-                                </svg>
-                            </a>
-                        </li>
-                        <li id="logout-btn-container">
-                            <a href="#" onclick="handleLogout(); return false;" class="rounded-circle bg-light p-2 mx-1 text-dark" title="Terminar Sessão">
-                                <i class="fa-solid fa-arrow-right-from-bracket logout-icon"></i>
-                            </a>
-                        </li>
-                        <li class="d-lg-none">
-                            <a href="#" class="rounded-circle bg-light p-2 mx-1" data-bs-toggle="offcanvas"
-                                data-bs-target="#offcanvasCart" aria-controls="offcanvasCart">
-                                <svg width="24" height="24" viewBox="0 0 24 24">
-                                    <use xlink:href="#cart"></use>
-                                </svg>
-                            </a>
-                        </li>
-                        <li class="d-lg-none">
-                            <a href="#" class="rounded-circle bg-light p-2 mx-1" data-bs-toggle="offcanvas"
-                                data-bs-target="#offcanvasSearch" aria-controls="offcanvasSearch">
-                                <svg width="24" height="24" viewBox="0 0 24 24">
-                                    <use xlink:href="#search"></use>
-                                </svg>
-                            </a>
-                        </li>
-                    </ul>
-
-                    <div class="cart text-end d-none d-lg-block dropdown">
-                        <button class="border-0 bg-transparent d-flex flex-column gap-2 lh-1" type="button"
-                            data-bs-toggle="offcanvas" data-bs-target="#offcanvasCart" aria-controls="offcanvasCart">
-                            <span class="fs-6 text-muted dropdown-toggle">Carrinho</span>
-                            <span class="cart-total fs-5 fw-bold">0.00€</span>
-                        </button>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </header>
-
-
-
-
-    <section class="py-5 bg-light">
+<!-- Hero -->
+<section class="profile-hero">
     <div class="container">
-        <div class="row">
-            <div class="col-lg-3">
-                <div class="profile-sidebar bg-white p-4 rounded-3 shadow-sm mb-4">
-                    <div class="text-center mb-4">
-                        <div class="avatar-placeholder mb-3">
-                            <i class="fa-solid fa-user-circle fa-5x text-primary"></i>
-                        </div>
-                        <h4 class="fw-bold" id="profile-user-name">Olá Utilizador!</h4>
-                    </div>
-                    
-                    <ul class="list-unstyled profile-menu">
-                        <li class="active"><a href="#"><i class="fa-solid fa-user"></i> Conta <i class="fa-solid fa-chevron-right float-end"></i></a></li>
-                        <li><a href="#"><i class="fa-solid fa-location-dot"></i> Gestão de Moradas <i class="fa-solid fa-chevron-right float-end"></i></a></li>
-                        <li><a href="#"><i class="fa-solid fa-heart"></i> Favoritos <i class="fa-solid fa-chevron-right float-end"></i></a></li>
-                        <li><a href="#"><i class="fa-solid fa-bell"></i> Alerta de Preço <i class="fa-solid fa-chevron-right float-end"></i></a></li>
-                        <li><a href="#"><i class="fa-solid fa-gear"></i> Configurações <i class="fa-solid fa-chevron-right float-end"></i></a></li>
-                        <li><a href="#"><i class="fa-solid fa-circle-question"></i> Perguntas Frequentes <i class="fa-solid fa-chevron-right float-end"></i></a></li>
-                        <hr>
-                        <li><a href="#" class="text-dark"><i class="fa-solid fa-right-from-bracket"></i> Terminar sessão</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="col-lg-9">
-                <h3 class="mb-4 fw-bold">Encomendas em Curso</h3>
-                
-                <div class="card border-0 shadow-sm mb-4 p-5 text-center">
-                    <div class="empty-orders">
-                        <img src="https://cdn-icons-png.flaticon.com/512/3081/3081840.png" alt="Cart" style="width: 80px; opacity: 0.5;" class="mb-3">
-                        <p class="text-muted">Não tens encomendas em curso</p>
-                        <a href="#" class="btn btn-primary px-5 py-2">Começar a comprar</a>
-                    </div>
-                </div>
-
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="card border-0 shadow-sm p-3 h-100 d-flex flex-row align-items-center">
-                            <div class="p-3 bg-light rounded-circle me-3">
-                                <i class="fa-solid fa-heart text-primary fs-4"></i>
-                            </div>
-                            <div>
-                                <h5 class="mb-0 fw-bold">Favoritos</h5>
-                                <p class="text-muted mb-0">0 produtos</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card border-0 shadow-sm p-3 h-100 d-flex flex-row align-items-center">
-                            <div class="p-3 bg-light rounded-circle me-3">
-                                <i class="fa-solid fa-bell text-primary fs-4"></i>
-                            </div>
-                            <div>
-                                <h5 class="mb-0 fw-bold">Alertas de Preço</h5>
-                                <p class="text-muted mb-0">0 produtos</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                </div>
+        <div class="profile-hero-inner">
+            <div class="profile-avatar"><i class="fa-solid fa-user"></i></div>
+            <div>
+                <h1 id="profile-user-name">Olá!</h1>
+                <p>Gere a tua conta, favoritos e atividade.</p>
             </div>
         </div>
     </div>
 </section>
 
+<main class="es-section-sm">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Menu lateral -->
+            <aside class="col-lg-4 col-xl-3">
+                <ul class="profile-menu">
+                    <li class="active">
+                        <a href="#"><i class="fa-solid fa-user"></i> Conta <i class="fa-solid fa-chevron-right chevron"></i></a>
+                    </li>
+                    <li>
+                        <a href="favorites.html"><i class="fa-solid fa-heart"></i> Favoritos <i class="fa-solid fa-chevron-right chevron"></i></a>
+                    </li>
+                    <li>
+                        <a href="#" class="disabled-link"><i class="fa-solid fa-bell"></i> Alertas de Preço <span class="soon">Em breve</span></a>
+                    </li>
+                    <li>
+                        <a href="#" class="disabled-link"><i class="fa-solid fa-location-dot"></i> Moradas <span class="soon">Em breve</span></a>
+                    </li>
+                    <li>
+                        <a href="#" class="disabled-link"><i class="fa-solid fa-gear"></i> Configurações <span class="soon">Em breve</span></a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="handleLogout(); return false;" class="logout"><i class="fa-solid fa-right-from-bracket"></i> Terminar sessão</a>
+                    </li>
+                </ul>
+            </aside>
 
+            <!-- Conteúdo -->
+            <div class="col-lg-8 col-xl-9">
+                <div class="data-card">
+                    <h3><i class="fa-solid fa-id-card"></i> Dados pessoais</h3>
+                    <div class="data-grid">
+                        <div class="data-item">
+                            <label>Nome</label>
+                            <div class="value" id="profile-data-name">—</div>
+                        </div>
+                        <div class="data-item">
+                            <label>Email</label>
+                            <div class="value" id="profile-data-email">—</div>
+                        </div>
+                        <div class="data-item">
+                            <label>Conta criada em</label>
+                            <div class="value" id="profile-data-created">—</div>
+                        </div>
+                        <div class="data-item">
+                            <label>Último login</label>
+                            <div class="value" id="profile-data-last-login">—</div>
+                        </div>
+                    </div>
+                    <hr class="es-divider">
+                    <button class="es-btn es-btn-outline" disabled title="Em breve">
+                        <i class="fa-solid fa-pen"></i> Editar dados
+                    </button>
+                </div>
 
-    <footer class="py-5">
-        <div class="container-fluid">
-            <div class="row">
+                <h3 style="font-size:1rem;margin:24px 0 12px;color:var(--es-gray-700);text-transform:uppercase;letter-spacing:.04em;">Atividade</h3>
 
-                <!-- Logo + redes -->
-                <div class="col-lg-3 col-md-6 col-sm-6">
-                    <div class="footer-menu">
-                        <img src="images/logo3.png" alt="logo" class="img-fluid">
-                        <p class="mt-3">
-                            A tua loja de eletrodomésticos com as melhores ofertas e parcerias em Portugal.
-                        </p>
-
-                        <div class="social-links mt-4">
-                            <ul class="d-flex list-unstyled gap-2">
-                                <li><a href="#" class="btn btn-outline-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width:38px;height:38px;" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a></li>
-                                <li><a href="#" class="btn btn-outline-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width:38px;height:38px;" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a></li>
-                                <li><a href="#" class="btn btn-outline-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width:38px;height:38px;" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a></li>
-                            </ul>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <a href="favorites.html" class="stat-card">
+                            <div class="stat-card-icon"><i class="fa-solid fa-heart"></i></div>
+                            <div>
+                                <h4>Favoritos</h4>
+                                <div class="stat-value"><span id="profile-favorites-count">—</span> <small style="font-size:.75rem;font-weight:500;color:var(--es-text-muted);">produtos</small></div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="stat-card disabled">
+                            <div class="stat-card-icon"><i class="fa-solid fa-bell"></i></div>
+                            <div>
+                                <h4>Alertas de Preço</h4>
+                                <div class="stat-value"><small style="font-size:.75rem;font-weight:500;color:var(--es-text-muted);">Em breve</small></div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Sobre -->
-                <div class="col-md-2 col-sm-6">
-                    <div class="footer-menu">
-                        <h5 class="widget-title">Sobre</h5>
-                        <ul class="menu-list list-unstyled">
-                            <li><a href="#" class="nav-link">Sobre nós</a></li>
-                            <li><a href="#" class="nav-link">Condições</a></li>
-                            <li><a href="#" class="nav-link">Trabalhar connosco</a></li>
-                            <li><a href="#" class="nav-link">Parcerias</a></li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Apoio ao cliente -->
-                <div class="col-md-2 col-sm-6">
-                    <div class="footer-menu">
-                        <h5 class="widget-title">Apoio ao Cliente</h5>
-                        <ul class="menu-list list-unstyled">
-                            <li><a href="#" class="nav-link">FAQ</a></li>
-                            <li><a href="#" class="nav-link">Contactos</a></li>
-                            <li><a href="#" class="nav-link">Política de Privacidade</a></li>
-                            <li><a href="#" class="nav-link">Devoluções</a></li>
-                            <li><a href="#" class="nav-link">Entregas</a></li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Parcerias -->
-                <div class="col-md-2 col-sm-6">
-                    <div class="footer-menu">
-                        <h5 class="widget-title">Parcerias</h5>
-                        <ul class="menu-list list-unstyled">
-                            <li><span class="nav-link">Worten</span></li>
-                            <li><span class="nav-link">Fnac</span></li>
-                            <li><span class="nav-link">Rádio Popular</span></li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Newsletter -->
-                <div class="col-lg-3 col-md-6 col-sm-6">
-                    <div class="footer-menu">
-                        <h5 class="widget-title">Newsletter</h5>
-                        <p>Recebe promoções exclusivas em eletrodomésticos.</p>
-
-                        <form class="d-flex mt-3 gap-0">
-                            <input class="form-control rounded-start rounded-0 bg-light" type="email"
-                                placeholder="O teu email">
-                            <button class="btn btn-dark rounded-end rounded-0" type="submit">
-                                Subscrever
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </footer>
-
-    <div id="footer-bottom">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-6 copyright">
-                    <p>© 2026 EletroSync. Todos os direitos reservados.</p>
+                <div class="text-center mt-4">
+                    <a href="product.html" class="es-btn es-btn-primary es-btn-lg">
+                        <i class="fa-solid fa-bag-shopping"></i> Explorar Produtos
+                    </a>
                 </div>
             </div>
         </div>
     </div>
-    <script src="js/jquery-1.11.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
-        crossorigin="anonymous"></script>
-    <script src="js/plugins.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/cart.js"></script>
-    <script src="js/script.js"></script>
-</body>
+</main>
 
+<div id="es-footer-slot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/ui-layout.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/profile.js"></script>
+</body>
 </html>

@@ -1,184 +1,164 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-    <title>EletroSync - Meus Favoritos</title>
+    <title>Meus Favoritos — EletroSync</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="css/vendor.css">
-    <link rel="stylesheet" type="text/css" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="css/design-system.css">
+
     <style>
-        .transition-hover {
-            transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
-            border-radius: 16px;
-            background: #fff;
-            border: 1px solid #f2f2f2;
+        .page-header {
+            background: var(--es-white);
+            padding: 32px 0;
+            border-bottom: 1px solid var(--es-gray-200);
+        }
+        .page-header h1 { margin: 0; display: flex; align-items: center; gap: 12px; }
+        .page-header h1 i { color: var(--es-danger); }
+        .page-header p { color: var(--es-text-muted); margin: 4px 0 0; }
+
+        /* Product card reusing es-product-card */
+        .fav-card { position: relative; }
+        .fav-card .fav-remove {
+            position: absolute;
+            top: 12px; right: 12px;
+            width: 36px; height: 36px;
+            background: var(--es-white);
+            color: var(--es-danger);
+            border: 0;
+            border-radius: var(--es-radius-full);
+            box-shadow: var(--es-shadow-sm);
             cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.03) !important;
+            transition: all var(--es-transition);
+            z-index: 2;
         }
-
-        .transition-hover:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 25px 50px rgba(0,0,0,0.1) !important;
-            border-color: #ffc43f;
-        }
-
-        /* Imagem com zoom e rotação orgânica */
-        .product-image {
-            transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
-            height: 180px;
-            object-fit: contain;
-        }
-
-        .transition-hover:hover .product-image {
-            transform: scale(1.1) rotate(2deg);
-        }
-
-        /* Estrela com o teu Gradiente Dourado */
-        .premium-star {
-            font-size: 0.9rem;
-            background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1));
-            transition: transform 0.3s ease;
-        }
-
-        .transition-hover:hover .premium-star {
-            transform: scale(1.2);
-        }
-
-        /* Título que muda de cor */
-        .product-title {
-            font-weight: 700;
-            transition: color 0.3s ease;
-            color: #2d2d2d;
-        }
-
-        .transition-hover:hover .product-title {
-            color: #ffc43f !important;
-        }
-
-        /* Ajuste dos botões dentro do card */
-        .card-actions {
-            opacity: 0.8;
-            transition: opacity 0.3s ease;
-        }
-        
-        .transition-hover:hover .card-actions {
-            opacity: 1;
-        }
+        .fav-card .fav-remove:hover { background: var(--es-danger); color: var(--es-white); }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
-    <header class="py-3 border-bottom bg-white">
-        <div class="container d-flex justify-content-between align-items-center">
-            <a href="index.html"><img src="images/logo3.png" style="max-height: 40px;"></a>
-            <a href="index.html" class="btn btn-outline-primary rounded-5">Voltar à Loja</a>
-        </div>
-    </header>
+<div id="es-header-slot"></div>
 
-    <div class="container py-5">
-        <h2 class="fw-bold mb-4"><i class="fa-solid fa-heart text-danger me-2"></i>Meus Favoritos</h2>
-        
-        <div id="favList" class="row g-4">
+<div class="page-header">
+    <div class="container">
+        <h1><i class="fa-solid fa-heart"></i> Meus Favoritos</h1>
+        <p>Os produtos que guardaste para comparar mais tarde</p>
+    </div>
+</div>
+
+<main class="es-section">
+    <div class="container">
+        <div id="favList" class="row g-3"></div>
+
+        <div id="emptyMsg" class="es-empty d-none">
+            <div class="es-empty-icon">
+                <i class="fa-regular fa-heart"></i>
             </div>
-
-        <div id="emptyMsg" class="text-center py-5 d-none">
-            <i class="fa-regular fa-heart fa-4x text-muted mb-3"></i>
-            <h3>A tua lista está vazia</h3>
-            <p>Explora os produtos e clica no coração para os guardares aqui!</p>
-            <a href="index.html" class="btn btn-primary rounded-5 px-4 mt-3">Explorar Produtos</a>
+            <h4>A tua lista está vazia</h4>
+            <p>Explora os produtos e clica no coração para os guardares aqui.</p>
+            <a href="product.html" class="es-btn es-btn-primary es-btn-lg mt-3">
+                <i class="fa-solid fa-compass"></i> Explorar Produtos
+            </a>
         </div>
     </div>
+</main>
 
-    <script src="js/favorites.js"></script>
-    <script>
-        let cachedFavorites = [];
+<div id="es-footer-slot"></div>
 
-        async function renderFavorites() {
-            const favList = document.getElementById('favList');
-            const emptyMsg = document.getElementById('emptyMsg');
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/ui-layout.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/favorites.js"></script>
+<script>
+    let cachedFavorites = [];
 
-            cachedFavorites = await window.Favorites.getFavorites();
+    const CATEGORY_LABEL = {
+        'eletrodomesticos': 'Eletrodomésticos',
+        'informatica':      'Informática',
+        'smartphones':      'Smartphones',
+        'imagem-e-som':     'Imagem e Som',
+        'gaming':           'Gaming',
+        'outros':           'Outros',
+    };
 
-            if (cachedFavorites.length === 0) {
-                favList.innerHTML = '';
-                emptyMsg.classList.remove('d-none');
-                return;
-            }
+    function escHtml(str) {
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
 
-            emptyMsg.classList.add('d-none');
+    async function renderFavorites() {
+        const favList = document.getElementById('favList');
+        const emptyMsg = document.getElementById('emptyMsg');
 
-            favList.innerHTML = cachedFavorites.map(product => {
-                const prices = (product.shops || []).map(s => parseFloat(s.price));
-                const minPrice = prices.length ? Math.min(...prices) : 0;
+        cachedFavorites = await window.Favorites.getFavorites();
 
-                return `
-                    <div class="col-12 col-sm-6 col-lg-4">
-                        <div class="transition-hover p-4">
-                            <div class="mb-2">
-                                <span class="badge" style="font-size: 10px;">${product.category || ''}</span>
-                            </div>
+        if (cachedFavorites.length === 0) {
+            favList.innerHTML = '';
+            emptyMsg.classList.remove('d-none');
+            return;
+        }
+        emptyMsg.classList.add('d-none');
 
-                            <div class="text-center py-3">
-                                <img src="${product.image}" class="product-image img-fluid" alt="${product.name}">
-                            </div>
+        favList.innerHTML = cachedFavorites.map(product => {
+            const prices = (product.shops || []).map(s => parseFloat(s.price)).filter(n => !isNaN(n));
+            const minPrice = prices.length ? Math.min(...prices) : 0;
+            const catLabel = CATEGORY_LABEL[product.category] || '';
 
-                            <div class="product-content mt-3">
-                                <div class="d-flex align-items-center gap-1 mb-1">
-                                    <i class="fa-solid fa-star premium-star"></i>
-                                    <span class="small fw-bold">${product.rating || ''}</span>
-                                </div>
-
-                                <h5 class="product-title mb-3">${product.name}</h5>
-
-                                <div class="d-flex justify-content-between align-items-end mt-auto">
-                                    <div>
-                                        <span class="text-muted d-block" style="font-size: 11px;">O preço mais baixo</span>
-                                        <span class="fw-bold text-dark fs-4">${minPrice.toFixed(2)}€</span>
-                                    </div>
-
-                                    <div class="card-actions">
-                                        <button class="btn btn-outline-danger btn-sm rounded-circle me-1"
-                                                onclick="removeFav('${encodeURIComponent(product.name)}')" title="Remover">
-                                            <i class="fa-solid fa-trash-can"></i>
-                                        </button>
-                                        <button class="btn btn-dark btn-sm rounded-5 px-3"
-                                                onclick="viewProduct('${encodeURIComponent(product.name)}')">
-                                            Ver Lojas
-                                        </button>
-                                    </div>
+            return `
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="es-product-card fav-card">
+                        <button class="fav-remove" onclick="removeFav('${encodeURIComponent(product.name)}')" title="Remover dos favoritos">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                        <div class="es-product-image">
+                            <img src="${escHtml(product.image)}" alt="${escHtml(product.name)}" loading="lazy">
+                        </div>
+                        <div class="es-product-body">
+                            ${catLabel ? `<span class="es-badge es-badge-neutral" style="align-self:flex-start;">${catLabel}</span>` : ''}
+                            <h3 class="es-product-title">${escHtml(product.name)}</h3>
+                            <span class="es-product-rating">
+                                <i class="fa-solid fa-star"></i> ${escHtml(product.rating || '—')}
+                            </span>
+                            <div class="es-product-price-row">
+                                <div>
+                                    <div style="font-size:.7rem;color:var(--es-text-muted);text-transform:uppercase;font-weight:700;letter-spacing:.04em;">Desde</div>
+                                    <span class="es-product-price">${minPrice.toFixed(2)}€</span>
                                 </div>
                             </div>
                         </div>
+                        <div class="es-product-actions">
+                            <button class="es-btn es-btn-primary es-btn-sm flex-grow-1" onclick="viewProduct('${encodeURIComponent(product.name)}')">
+                                Ver Lojas <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
                     </div>
-                `;
-            }).join('');
-        }
+                </div>
+            `;
+        }).join('');
+    }
 
-        async function removeFav(encodedName) {
-            const name = decodeURIComponent(encodedName);
-            await window.Favorites.removeFavorite(name);
-            await renderFavorites();
-        }
+    async function removeFav(encodedName) {
+        const name = decodeURIComponent(encodedName);
+        await window.Favorites.removeFavorite(name);
+        await renderFavorites();
+    }
 
-        function viewProduct(encodedName) {
-            const name = decodeURIComponent(encodedName);
-            const prod = cachedFavorites.find(p => p.name === name);
-            if (!prod) return;
-            localStorage.setItem('selectedProduct', JSON.stringify(prod));
-            window.location.href = 'single-product.html';
-        }
+    function viewProduct(encodedName) {
+        const name = decodeURIComponent(encodedName);
+        const prod = cachedFavorites.find(p => p.name === name);
+        if (!prod) return;
+        localStorage.setItem('selectedProduct', JSON.stringify(prod));
+        window.location.href = 'single-product.html';
+    }
 
-        document.addEventListener('DOMContentLoaded', renderFavorites);
-    </script>
+    document.addEventListener('DOMContentLoaded', renderFavorites);
+</script>
 </body>
 </html>

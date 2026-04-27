@@ -1,704 +1,330 @@
 <!DOCTYPE html>
 <html lang="pt">
-
 <head>
-  <title>EletroSync</title>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="format-detection" content="telephone=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="author" content="">
-  <meta name="keywords" content="">
-  <meta name="description" content="">
+    <title>EletroSync — Compara preços de eletrónica em Portugal</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Compara preços de eletrodomésticos, informática, smartphones e gaming nas melhores lojas de Portugal — Worten, Fnac, Rádio Popular e PC Diga.">
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
-  <link rel="stylesheet" type="text/css" href="css/vendor.css">
-  <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap"
-    rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="css/design-system.css">
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        /* Hero */
+        .es-hero {
+            background: linear-gradient(135deg, #fffaed 0%, #fff4d6 100%);
+            padding: 48px 0 32px;
+        }
+        .es-hero-title {
+            font-family: var(--es-font-heading);
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            line-height: 1.15;
+            color: var(--es-dark);
+            margin-bottom: 16px;
+        }
+        .es-hero-title mark {
+            background: linear-gradient(180deg, transparent 65%, var(--es-primary) 65%);
+            padding: 0 6px;
+            color: inherit;
+        }
+        .es-hero-sub { font-size: 1.125rem; color: var(--es-text-muted); max-width: 540px; margin-bottom: 24px; }
+        .es-hero-search {
+            max-width: 620px;
+            background: var(--es-white);
+            border-radius: var(--es-radius-full);
+            padding: 8px;
+            box-shadow: var(--es-shadow-lg);
+            display: flex;
+            align-items: center;
+        }
+        .es-hero-search input {
+            flex: 1; border: 0; background: transparent;
+            padding: 12px 20px; font-size: 1rem; outline: none;
+        }
+        .es-hero-stats {
+            display: flex; gap: 32px; margin-top: 32px; flex-wrap: wrap;
+        }
+        .es-hero-stat { display: flex; flex-direction: column; }
+        .es-hero-stat-value { font-family: var(--es-font-heading); font-size: 1.5rem; font-weight: 800; color: var(--es-dark); }
+        .es-hero-stat-label { font-size: 0.8125rem; color: var(--es-text-muted); }
 
+        /* Stores strip */
+        .es-stores-strip {
+            background: var(--es-white);
+            padding: 24px 0;
+            border-bottom: 1px solid var(--es-gray-200);
+        }
+        .es-stores-strip-grid {
+            display: grid;
+            grid-template-columns: auto repeat(4, 1fr);
+            gap: 24px;
+            align-items: center;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .es-stores-strip-title { font-size: 0.8125rem; font-weight: 700; color: var(--es-text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+        .es-stores-strip-item {
+            text-align: center;
+            padding: 8px 12px;
+            border-radius: var(--es-radius-md);
+            font-weight: 700;
+            font-size: 0.9375rem;
+        }
+        @media (max-width: 768px) {
+            .es-stores-strip-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .es-stores-strip-title { grid-column: 1 / -1; text-align: center; }
+        }
+
+        /* Categoria cards */
+        .es-category-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 28px 16px;
+            background: var(--es-white);
+            border: 1px solid var(--es-gray-200);
+            border-radius: var(--es-radius-lg);
+            text-decoration: none;
+            color: var(--es-text);
+            transition: all var(--es-transition);
+            height: 100%;
+            text-align: center;
+        }
+        .es-category-card:hover {
+            border-color: var(--es-primary);
+            box-shadow: var(--es-shadow-md);
+            transform: translateY(-3px);
+            color: var(--es-dark);
+        }
+        .es-category-card-icon {
+            width: 64px; height: 64px;
+            border-radius: var(--es-radius-full);
+            background: var(--es-primary-light);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; color: #a07103;
+        }
+        .es-category-card h3 { font-size: 1rem; margin: 0; }
+
+        /* Feature */
+        .es-feature {
+            display: flex; gap: 16px; padding: 20px;
+            background: var(--es-white); border: 1px solid var(--es-gray-200);
+            border-radius: var(--es-radius-lg); height: 100%;
+        }
+        .es-feature-icon {
+            width: 48px; height: 48px; flex-shrink: 0;
+            background: var(--es-primary-light); color: #a07103;
+            border-radius: var(--es-radius-md);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+        }
+        .es-feature h4 { font-size: 1rem; margin: 0 0 4px; }
+        .es-feature p { font-size: 0.875rem; color: var(--es-text-muted); margin: 0; line-height: 1.5; }
+
+        /* CTA banner */
+        .es-cta-banner {
+            background: linear-gradient(135deg, var(--es-dark) 0%, #2d2d2d 100%);
+            color: var(--es-white);
+            padding: 48px;
+            border-radius: var(--es-radius-xl);
+            display: flex; align-items: center; justify-content: space-between; gap: 24px;
+            flex-wrap: wrap;
+        }
+        .es-cta-banner h2 { color: var(--es-white); margin: 0 0 8px; }
+        .es-cta-banner p { color: var(--es-gray-400); margin: 0; }
+    </style>
 </head>
-
 <body>
 
-  <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
-    <defs>
-      <symbol xmlns="http://www.w3.org/2000/svg" id="link" viewBox="0 0 24 24">
-        <path fill="currentColor"
-          d="M12 19a1 1 0 1 0-1-1a1 1 0 0 0 1 1Zm5 0a1 1 0 1 0-1-1a1 1 0 0 0 1 1Zm0-4a1 1 0 1 0-1-1a1 1 0 0 0 1 1Zm-5 0a1 1 0 1 0-1-1a1 1 0 0 0 1 1Zm7-12h-1V2a1 1 0 0 0-2 0v1H8V2a1 1 0 0 0-2 0v1H5a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3Zm1 17a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9h16Zm0-11H4V6a1 1 0 0 1 1-1h1v1a1 1 0 0 0 2 0V5h8v1a1 1 0 0 0 2 0V5h1a1 1 0 0 1 1 1ZM7 15a1 1 0 1 0-1-1a1 1 0 0 0 1 1Zm0 4a1 1 0 1 0-1-1a1 1 0 0 0 1 1Z" />
-      </symbol>
-      <symbol xmlns="http://www.w3.org/2000/svg" id="arrow-right" viewBox="0 0 24 24">
-        <path fill="currentColor"
-          d="M17.92 11.62a1 1 0 0 0-.21-.33l-5-5a1 1 0 0 0-1.42 1.42l3.3 3.29H7a1 1 0 0 0 0 2h7.59l-3.3 3.29a1 1 0 0 0 0 1.42a1 1 0 0 0 1.42 0l5-5a1 1 0 0 0 .21-.33a1 1 0 0 0 0-.76Z" />
-      </symbol>
-      <symbol xmlns="http://www.w3.org/2000/svg" id="category" viewBox="0 0 24 24">
-        <path fill="currentColor"
-          d="M19 5.5h-6.28l-.32-1a3 3 0 0 0-2.84-2H5a3 3 0 0 0-3 3v13a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-10a3 3 0 0 0-3-3Zm1 13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1h4.56a1 1 0 0 1 .95.68l.54 1.64a1 1 0 0 0 .95.68h7a1 1 0 0 1 1 1Z" />
-      </symbol>
-      <symbol xmlns="http://www.w3.org/2000/svg" id="calendar" viewBox="0 0 24 24">
-        <path fill="currentColor"
-          d="M19 4h-2V3a1 1 0 0 0-2 0v1H9V3a1 1 0 0 0-2 0v1H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3Zm1 15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-7h16Zm0-9H4V7a1 1 0 0 1 1-1h2v1a1 1 0 0 0 2 0V6h6v1a1 1 0 0 0 2 0V6h2a1 1 0 0 1 1 1Z" />
-      </symbol>
-      <symbol xmlns="http://www.w3.org/2000/svg" id="heart" viewBox="0 0 24 24">
-        <path fill="currentColor"
-          d="M20.16 4.61A6.27 6.27 0 0 0 12 4a6.27 6.27 0 0 0-8.16 9.48l7.45 7.45a1 1 0 0 0 1.42 0l7.45-7.45a6.27 6.27 0 0 0 0-8.87Zm-1.41 7.46L12 18.81l-6.75-6.74a4.28 4.28 0 0 1 3-7.3a4.25 4.25 0 0 1 3 1.25a1 1 0 0 0 1.42 0a4.27 4.27 0 0 1 6 6.05Z" />
-      </symbol>
-      <symbol xmlns="http://www.w3.org/2000/svg" id="plus" viewBox="0 0 24 24">
-        <path fill="currentColor"
-          d="M19 11h-6V5a1 1 0 0 0-2 0v6H5a1 1 0 0 0 0 2h6v6a1 1 0 0 0 2 0v-6h6a1 1 0 0 0 0-2Z" />
-      </symbol>
-      <symbol xmlns="http://www.w3.org/2000/svg" id="minus" viewBox="0 0 24 24">
-        <path fill="currentColor" d="M19 11H5a1 1 0 0 0 0 2h14a1 1 0 0 0 0-2Z" />
-      </symbol>
-      <symbol xmlns="http://www.w3.org/2000/svg" id="cart" viewBox="0 0 24 24">
-        <path fill="currentColor"
-          d="M8.5 19a1.5 1.5 0 1 0 1.5 1.5A1.5 1.5 0 0 0 8.5 19ZM19 16H7a1 1 0 0 1 0-2h8.491a3.013 3.013 0 0 0 2.885-2.176l1.585-5.55A1 1 0 0 0 19 5H6.74a3.007 3.007 0 0 0-2.82-2H3a1 1 0 0 0 0 2h.921a1.005 1.005 0 0 1 .962.725l.155.545v.005l1.641 5.742A3 3 0 0 0 7 18h12a1 1 0 0 0 0-2Zm-1.326-9l-1.22 4.274a1.005 1.005 0 0 1-.963.726H8.754l-.255-.892L7.326 7ZM16.5 19a1.5 1.5 0 1 0 1.5 1.5a1.5 1.5 0 0 0-1.5-1.5Z" />
-      </symbol>
-      <symbol xmlns="http://www.w3.org/2000/svg" id="check" viewBox="0 0 24 24">
-        <path fill="currentColor"
-          d="M18.71 7.21a1 1 0 0 0-1.42 0l-7.45 7.46l-3.13-3.14A1 1 0 1 0 5.29 13l3.84 3.84a1 1 0 0 0 1.42 0l8.16-8.16a1 1 0 0 0 0-1.47Z" />
-      </symbol>
-      <symbol xmlns="http://www.w3.org/2000/svg" id="trash" viewBox="0 0 24 24">
-        <path fill="currentColor"
-          d="M10 18a1 1 0 0 0 1-1v-6a1 1 0 0 0-2 0v6a1 1 0 0 0 1 1ZM20 6h-4V5a3 3 0 0 0-3-3h-2a3 3 0 0 0-3 3v1H4a1 1 0 0 0 0 2h1v11a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3V8h1a1 1 0 0 0 0-2ZM10 5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1h-4Zm7 14a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V8h10Zm-3-1a1 1 0 0 0 1-1v-6a1 1 0 0 0-2 0v6a1 1 0 0 0 1 1Z" />
-      </symbol>
-      <symbol xmlns="http://www.w3.org/2000/svg" id="star-outline" viewBox="0 0 15 15">
-        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-          d="M7.5 9.804L5.337 11l.413-2.533L4 6.674l2.418-.37L7.5 4l1.082 2.304l2.418.37l-1.75 1.793L9.663 11L7.5 9.804Z" />
-      </symbol>
-      <symbol xmlns="http://www.w3.org/2000/svg" id="star-solid" viewBox="0 0 15 15">
-        <path fill="currentColor"
-          d="M7.953 3.788a.5.5 0 0 0-.906 0L6.08 5.85l-2.154.33a.5.5 0 0 0-.283.843l1.574 1.613l-.373 2.284a.5.5 0 0 0 .736.518l1.92-1.063l1.921 1.063a.5.5 0 0 0 .736-.519l-.373-2.283l1.574-1.613a.5.5 0 0 0-.283-.844L8.921 5.85l-.968-2.062Z" />
-      </symbol>
-      <symbol xmlns="http://www.w3.org/2000/svg" id="search" viewBox="0 0 24 24">
-        <path fill="currentColor"
-          d="M21.71 20.29L18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.39ZM11 18a7 7 0 1 1 7-7a7 7 0 0 1-7 7Z" />
-      </symbol>
-      <symbol xmlns="http://www.w3.org/2000/svg" id="user" viewBox="0 0 24 24">
-        <path fill="currentColor"
-          d="M15.71 12.71a6 6 0 1 0-7.42 0a10 10 0 0 0-6.22 8.18a1 1 0 0 0 2 .22a8 8 0 0 1 15.9 0a1 1 0 0 0 1 .89h.11a1 1 0 0 0 .88-1.1a10 10 0 0 0-6.25-8.19ZM12 12a4 4 0 1 1 4-4a4 4 0 0 1-4 4Z" />
-      </symbol>
-      <symbol xmlns="http://www.w3.org/2000/svg" id="close" viewBox="0 0 15 15">
-        <path fill="currentColor"
-          d="M7.953 3.788a.5.5 0 0 0-.906 0L6.08 5.85l-2.154.33a.5.5 0 0 0-.283.843l1.574 1.613l-.373 2.284a.5.5 0 0 0 .736.518l1.92-1.063l1.921 1.063a.5.5 0 0 0 .736-.519l-.373-2.283l1.574-1.613a.5.5 0 0 0-.283-.844L8.921 5.85l-.968-2.062Z" />
-      </symbol>
-    </defs>
-  </svg>
+<div id="es-header-slot"></div>
 
-  <div class="preloader-wrapper">
-    <div class="preloader">
-    </div>
-  </div>
+<main>
+    <!-- Hero -->
+    <section class="es-hero">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-7">
+                    <span class="es-badge es-badge-primary mb-3" style="margin-bottom: 16px; display: inline-flex;">
+                        <i class="fa-solid fa-bolt"></i> Comparador de preços #1 em Portugal
+                    </span>
+                    <h1 class="es-hero-title">Poupa até <mark>40%</mark> em eletrónica comparando as melhores lojas.</h1>
+                    <p class="es-hero-sub">Encontra o preço mais baixo em eletrodomésticos, informática, smartphones e gaming — tudo num só lugar.</p>
 
-  <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasCart" aria-labelledby="My Cart">
-    <div class="offcanvas-header justify-content-center">
-      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
+                    <form class="es-hero-search" action="product.html" method="GET" role="search">
+                        <i class="fa-solid fa-magnifying-glass ms-3 text-muted"></i>
+                        <input type="text" name="query" placeholder="Pesquisa por produto, marca ou modelo…" aria-label="Pesquisar">
+                        <button type="submit" class="es-btn es-btn-primary">Pesquisar</button>
+                    </form>
 
-    <div class="offcanvas-body">
-      <!-- Preenchido dinamicamente por js/cart.js -->
-    </div>
-  </div>
-
-  <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasSearch"
-    aria-labelledby="Search">
-    <div class="offcanvas-header justify-content-center">
-      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-    <div class="offcanvas-body">
-      <div class="order-md-last">
-        <h4 class="d-flex justify-content-between align-items-center mb-3">
-          <span class="text-primary">Pesquisa</span>
-        </h4>
-        <form role="search" action="index.html" method="get" class="d-flex mt-3 gap-0">
-          <input class="form-control rounded-start rounded-0 bg-light" type="email"
-            placeholder="O que procuras?" aria-label="O que procuras?">
-          <button class="btn btn-dark rounded-end rounded-0" type="submit">Pesquisar</button>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <header>
-    <div class="container-fluid">
-      <div class="row py-3 border-bottom">
-
-        <div class="col-sm-4 col-lg-3 text-center text-sm-start">
-          <div class="main-logo">
-            <a href="index.html">
-              <img src="images/logo3.png" alt="logo" class="img-fluid">
-            </a>
-          </div>
-        </div>
-
-        <div class="col-sm-6 offset-sm-2 offset-md-0 col-lg-5 d-none d-lg-block">
-          <div class="search-bar bg-light p-2 my-2 rounded-4 d-flex align-items-center gap-2">
-            <form id="search-form" class="flex-grow-1 m-0" action="product.html" method="GET">
-                <input type="text" name="query" class="form-control border-0 bg-transparent" placeholder="Pesquisa mais de 20,000 produtos">
-            </form>
-
-            <span class="d-flex align-items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                <path fill="currentColor"
-                  d="M21.71 20.29L18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.39ZM11 18a7 7 0 1 1 7-7a7 7 0 0 1-7 7Z" />
-              </svg>
-            </span>
-          </div>
-        </div>
-
-        <div
-          class="col-sm-8 col-lg-4 d-flex justify-content-end gap-5 align-items-center mt-4 mt-sm-0 justify-content-center justify-content-sm-end">
-          <div class="support-box text-end d-none d-xl-block">
-            <span class="fs-6 text-muted">Suporte?</span>
-            <h5 class="mb-0">+351 - 916 788 652</h5>
-          </div>
-
-          <ul class="d-flex justify-content-end list-unstyled m-0">
-            <li>
-              <a href="profile.html" class="rounded-circle bg-light p-2 mx-1">
-                <svg width="24" height="24" viewBox="0 0 24 24">
-                  <use xlink:href="#user"></use>
-                </svg>
-              </a>
-            </li>
-            <li>
-              <a href="favorites.html" class="rounded-circle bg-light p-2 mx-1">
-                <svg width="24" height="24" viewBox="0 0 24 24">
-                  <use xlink:href="#heart"></use>
-                </svg>
-              </a>
-            </li>
-            <li id="logout-btn-container">
-              <a href="#" onclick="handleLogout(); return false;" class="rounded-circle bg-light p-2 mx-1 text-dark" title="Terminar Sessão">
-                <i class="fa-solid fa-arrow-right-from-bracket logout-icon"></i>
-              </a>
-            </li>
-            <li class="d-lg-none">
-              <a href="#" class="rounded-circle bg-light p-2 mx-1" data-bs-toggle="offcanvas"
-                data-bs-target="#offcanvasCart" aria-controls="offcanvasCart">
-                <svg width="24" height="24" viewBox="0 0 24 24">
-                  <use xlink:href="#cart"></use>
-                </svg>
-              </a>
-            </li>
-            <li class="d-lg-none">
-              <a href="#" class="rounded-circle bg-light p-2 mx-1" data-bs-toggle="offcanvas"
-                data-bs-target="#offcanvasSearch" aria-controls="offcanvasSearch">
-                <svg width="24" height="24" viewBox="0 0 24 24">
-                  <use xlink:href="#search"></use>
-                </svg>
-              </a>
-            </li>
-          </ul>
-
-          <div class="cart text-end d-none d-lg-block dropdown">
-            <button class="border-0 bg-transparent d-flex flex-column gap-2 lh-1" type="button"
-              data-bs-toggle="offcanvas" data-bs-target="#offcanvasCart" aria-controls="offcanvasCart">
-              <span class="fs-6 text-muted dropdown-toggle">Carrinho</span>
-              <span class="cart-total fs-5 fw-bold">0.00€</span>
-            </button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-    <div class="container-fluid">
-      <div class="row py-3">
-        <div class="d-flex  justify-content-center justify-content-sm-between align-items-center">
-          <nav class="main-menu d-flex navbar navbar-expand-lg">
-
-            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar"
-              aria-controls="offcanvasNavbar">
-              <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar"
-              aria-labelledby="offcanvasNavbarLabel">
-
-              <div class="offcanvas-header justify-content-center">
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-              </div>
-
-              <div class="offcanvas-body">
-                <ul class="navbar-nav justify-content-end menu-list list-unstyled d-flex gap-md-3 mb-0">
-
-                  <li class="nav-item">
-                    <a class="nav-link" href="product.html">Todos os Produtos</a>
-                  </li>
-
-                  <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" role="button" id="Eletrodomesticos" data-bs-toggle="dropdown" aria-expanded="false">
-                      Eletrodomésticos
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="Eletrodomesticos">
-                      <li><a href="product.html?cat=eletrodomesticos" class="dropdown-item">Todos</a></li>
-                      <li><a href="product.html?cat=eletrodomesticos&sub=Cozinha" class="dropdown-item">Cozinha</a></li>
-                      <li><a href="product.html?cat=eletrodomesticos&sub=Lavandaria" class="dropdown-item">Lavandaria</a></li>
-                      <li><a href="product.html?cat=eletrodomesticos&sub=Limpeza" class="dropdown-item">Limpeza</a></li>
-                      <li><a href="product.html?cat=eletrodomesticos&sub=Climatização" class="dropdown-item">Climatização</a></li>
-                      <li><a href="product.html?cat=eletrodomesticos&sub=Cuidado pessoal" class="dropdown-item">Cuidado pessoal</a></li>
-                    </ul>
-                  </li>
-
-                  <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" role="button" id="Informatica" data-bs-toggle="dropdown" aria-expanded="false">
-                      Informática
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="Informatica">
-                      <li><a href="product.html?cat=informatica" class="dropdown-item">Todos</a></li>
-                      <li><a href="product.html?cat=informatica&sub=Portáteis" class="dropdown-item">Portáteis</a></li>
-                      <li><a href="product.html?cat=informatica&sub=Computadores fixos" class="dropdown-item">Computadores fixos</a></li>
-                      <li><a href="product.html?cat=informatica&sub=Monitores" class="dropdown-item">Monitores</a></li>
-                      <li><a href="product.html?cat=informatica&sub=Impressoras" class="dropdown-item">Impressoras</a></li>
-                      <li><a href="product.html?cat=informatica&sub=Periféricos" class="dropdown-item">Periféricos</a></li>
-                    </ul>
-                  </li>
-
-                  <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" role="button" id="SmartphoneseAcessorios" data-bs-toggle="dropdown" aria-expanded="false">
-                      Smartphones
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="SmartphoneseAcessorios">
-                      <li><a href="product.html?cat=smartphones" class="dropdown-item">Todos</a></li>
-                      <li><a href="product.html?cat=smartphones&sub=Smartphones" class="dropdown-item">Smartphones</a></li>
-                      <li><a href="product.html?cat=smartphones&sub=Capas e películas" class="dropdown-item">Capas e películas</a></li>
-                      <li><a href="product.html?cat=smartphones&sub=Carregadores" class="dropdown-item">Carregadores</a></li>
-                      <li><a href="product.html?cat=smartphones&sub=Wearables" class="dropdown-item">Wearables</a></li>
-                    </ul>
-                  </li>
-
-                  <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" role="button" id="ImagemeSom" data-bs-toggle="dropdown" aria-expanded="false">
-                      Imagem e Som
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="ImagemeSom">
-                      <li><a href="product.html?cat=imagem" class="dropdown-item">Todos</a></li>
-                      <li><a href="product.html?cat=imagem&sub=TVs" class="dropdown-item">TVs</a></li>
-                      <li><a href="product.html?cat=imagem&sub=Barras de som" class="dropdown-item">Barras de som</a></li>
-                      <li><a href="product.html?cat=imagem&sub=Colunas" class="dropdown-item">Colunas</a></li>
-                      <li><a href="product.html?cat=imagem&sub=Auscultadores" class="dropdown-item">Auscultadores</a></li>
-                    </ul>
-                  </li>
-
-                  <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" role="button" id="Gaming" data-bs-toggle="dropdown" aria-expanded="false">
-                      Gaming
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="Gaming">
-                      <li><a href="product.html?cat=gaming" class="dropdown-item">Todos</a></li>
-                      <li><a href="product.html?cat=gaming&sub=Consolas" class="dropdown-item">Consolas</a></li>
-                      <li><a href="product.html?cat=gaming&sub=Jogos" class="dropdown-item">Jogos</a></li>
-                      <li><a href="product.html?cat=gaming&sub=Comandos" class="dropdown-item">Comandos</a></li>
-                      <li><a href="product.html?cat=gaming&sub=Cadeiras" class="dropdown-item">Cadeiras</a></li>
-                    </ul>
-                  </li>
-
-                  <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" role="button" id="Outros" data-bs-toggle="dropdown" aria-expanded="false">
-                      Outros
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="Outros">
-                      <li><a href="product.html?cat=outros" class="dropdown-item">Todos</a></li>
-                      <li><a href="product.html?cat=outros&sub=Cabos" class="dropdown-item">Cabos</a></li>
-                      <li><a href="product.html?cat=outros&sub=Pilhas" class="dropdown-item">Pilhas</a></li>
-                    </ul>
-                  </li>
-                </ul>
-              </div>
-
-            </div>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <section class="py-3">
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-md-12">
-
-          <div class="banner-blocks">
-
-            <div class="banner-ad large bg-info block-1">
-
-              <div class="swiper main-swiper">
-                <div class="swiper-wrapper">
-
-                  <div class="swiper-slide block-4">
-                    <div class="row align-items-end banner-content p-3 p-md-4 p-lg-5">
-                      <div class="content-wrapper col-7">
-                        <div class="categories my-2 my-md-3">Promoções da semana</div>
-                        <h3 class="display-4">Confira os produtos com maior desconto da Worten</h3>
-                        <p class="banner-para">Aproveite as melhores ofertas em gadgets, acessórios e eletrónica com descontos imperdíveis esta semana!</p>
-                        <a href="https://www.worten.pt/promocoes"
-                          class="btn btn-outline-dark btn-lg text-uppercase fs-6 rounded-1 px-4 py-3 mt-3">Compra já</a>
-                      </div>
-                      <div class="col-5 text-end">
-                        <img src="images/pctorre.png" class="banner-product-img" alt="PC Torre">
-                      </div>
+                    <div class="es-hero-stats">
+                        <div class="es-hero-stat">
+                            <span class="es-hero-stat-value">4</span>
+                            <span class="es-hero-stat-label">Lojas parceiras</span>
+                        </div>
+                        <div class="es-hero-stat">
+                            <span class="es-hero-stat-value">20.000+</span>
+                            <span class="es-hero-stat-label">Produtos comparados</span>
+                        </div>
+                        <div class="es-hero-stat">
+                            <span class="es-hero-stat-value">100%</span>
+                            <span class="es-hero-stat-label">Gratuito</span>
+                        </div>
                     </div>
-                  </div>
+                </div>
 
-                  <div class="swiper-slide block-5">
-                    <div class="row align-items-end banner-content p-3 p-md-4 p-lg-5">
-                      <div class="content-wrapper col-7">
-                        <div class="categories my-2 my-md-3">Promoções da semana</div>
-                        <h3 class="banner-title">Confira os produtos com maior desconto da Fnac</h3>
-                        <p class="banner-para">Aproveite as melhores ofertas em gadgets, acessórios e eletrónica com descontos imperdíveis esta semana!</p>
-                        <a href="https://www.fnac.pt/Oportunidades-FNAC/s14#bl=marktlink1"
-                          class="btn btn-outline-dark btn-lg text-uppercase fs-6 rounded-1 px-4 py-3 mt-3">Compra já</a>
-                      </div>
-                      <div class="col-5 text-end">
-                        <img src="images/comando.png" class="banner-product-img" alt="Comando">
-                      </div>
+                <div class="col-lg-5 d-none d-lg-block text-center">
+                    <img src="images/pctorre.png" alt="Produtos EletroSync" class="img-fluid" style="max-height: 380px;">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tiras de lojas -->
+    <section class="es-stores-strip">
+        <div class="container">
+            <div class="es-stores-strip-grid">
+                <span class="es-stores-strip-title">Comparamos</span>
+                <span class="es-stores-strip-item es-badge-store-worten">Worten</span>
+                <span class="es-stores-strip-item es-badge-store-fnac">Fnac</span>
+                <span class="es-stores-strip-item es-badge-store-radiopopular">Rádio Popular</span>
+                <span class="es-stores-strip-item es-badge-store-pcdiga">PC Diga</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Categorias -->
+    <section class="es-section">
+        <div class="container">
+            <div class="es-section-title">
+                <div>
+                    <h2>Explora por categoria</h2>
+                    <p class="es-section-subtitle">Encontra exatamente o que procuras</p>
+                </div>
+                <a href="product.html" class="es-btn es-btn-outline">Ver todos os produtos <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-6 col-md-4 col-lg-2">
+                    <a href="product.html?cat=eletrodomesticos" class="es-category-card">
+                        <span class="es-category-card-icon"><i class="fa-solid fa-blender"></i></span>
+                        <h3>Eletrodomésticos</h3>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                    <a href="product.html?cat=informatica" class="es-category-card">
+                        <span class="es-category-card-icon"><i class="fa-solid fa-laptop"></i></span>
+                        <h3>Informática</h3>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                    <a href="product.html?cat=smartphones" class="es-category-card">
+                        <span class="es-category-card-icon"><i class="fa-solid fa-mobile-screen"></i></span>
+                        <h3>Smartphones</h3>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                    <a href="product.html?cat=imagem" class="es-category-card">
+                        <span class="es-category-card-icon"><i class="fa-solid fa-tv"></i></span>
+                        <h3>Imagem e Som</h3>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                    <a href="product.html?cat=jogos" class="es-category-card">
+                        <span class="es-category-card-icon"><i class="fa-solid fa-gamepad"></i></span>
+                        <h3>Gaming</h3>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                    <a href="product.html?cat=outros" class="es-category-card">
+                        <span class="es-category-card-icon"><i class="fa-solid fa-box"></i></span>
+                        <h3>Outros</h3>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Como funciona -->
+    <section class="es-section" style="background: var(--es-gray-50);">
+        <div class="container">
+            <div class="es-section-title">
+                <div>
+                    <h2>Porquê o EletroSync?</h2>
+                    <p class="es-section-subtitle">Compra inteligente em 3 passos</p>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="es-feature">
+                        <div class="es-feature-icon"><i class="fa-solid fa-magnifying-glass-dollar"></i></div>
+                        <div>
+                            <h4>Compara preços</h4>
+                            <p>Vê o preço do mesmo produto nas 4 maiores lojas de Portugal em segundos.</p>
+                        </div>
                     </div>
-                  </div>
-
-                  <div class="swiper-slide block-6">
-                    <div class="row align-items-end banner-content p-3 p-md-4 p-lg-5">
-                      <div class="content-wrapper col-7">
-                        <div class="categories my-2 my-md-3">Promoções da semana</div>
-                        <h3 class="banner-title">Confira os produtos com maior desconto da Rádio Popular</h3>
-                        <p class="banner-para">Aproveite as melhores ofertas em gadgets, acessórios e eletrónica com descontos imperdíveis esta semana!</p>
-                        <a href="https://www.radiopopular.pt/"
-                          class="btn btn-outline-dark btn-lg text-uppercase fs-6 rounded-1 px-4 py-3 mt-3">Compra já</a>
-                      </div>
-                      <div class="col-5 text-end">
-                        <img src="images/tv.png" class="banner-product-img" alt="TV">
-                      </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="es-feature">
+                        <div class="es-feature-icon"><i class="fa-solid fa-heart"></i></div>
+                        <div>
+                            <h4>Guarda favoritos</h4>
+                            <p>Cria uma lista de produtos para acompanhares a evolução dos preços.</p>
+                        </div>
                     </div>
-                  </div>
                 </div>
-
-                <div class="swiper-pagination"></div>
-
-              </div>
-            </div>
-
-            <div class="banner-ad bg-success-subtle block-2">
-              <div class="row align-items-end h-100 banner-content p-3 p-md-4">
-                <div class="content-wrapper col-7">
-                  <div class="categories sale mb-3 pb-3">Novos produtos</div>
-                  <h3 class="banner-title">Tecnologia para Você</h3>
-                  <a href="#" class="d-flex align-items-center nav-link">
-                    Veja ofertas aqui
-                    <svg width="24" height="24">
-                      <use xlink:href="#arrow-right"></use>
-                    </svg>
-                  </a>
+                <div class="col-md-6 col-lg-3">
+                    <div class="es-feature">
+                        <div class="es-feature-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+                        <div>
+                            <h4>Carrinho inteligente</h4>
+                            <p>Vê qual a loja que tem o carrinho todo mais barato, não só item a item.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-5 text-end">
-                  <img src="images/torras1.png" class="banner-product-img" alt="Torras">
+                <div class="col-md-6 col-lg-3">
+                    <div class="es-feature">
+                        <div class="es-feature-icon"><i class="fa-solid fa-euro-sign"></i></div>
+                        <div>
+                            <h4>100% gratuito</h4>
+                            <p>Sem anúncios intrusivos, sem taxas escondidas. A nossa receita vem das parcerias.</p>
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
+        </div>
+    </section>
 
-            <div class="banner-ad bg-danger block-3">
-              <div class="row align-items-end h-100 banner-content p-3 p-md-4">
-                <div class="content-wrapper col-7">
-                  <div class="categories sale mb-3 pb-3">Dia do Pai</div>
-                  <h3 class="item-title">Presentes para o Pai</h3>
-                  <a href="#" class="d-flex align-items-center nav-link">
-                    Veja ofertas aqui
-                    <svg width="24" height="24">
-                      <use xlink:href="#arrow-right"></use>
-                    </svg>
-                  </a>
+    <!-- CTA final -->
+    <section class="es-section">
+        <div class="container">
+            <div class="es-cta-banner">
+                <div>
+                    <h2>Pronto para poupar?</h2>
+                    <p>Começa já a comparar preços nas principais lojas portuguesas.</p>
                 </div>
-                <div class="col-5 text-end">
-                  <img src="images/airpod.png" class="banner-product-img" alt="AirPods">
-                </div>
-              </div>
+                <a href="product.html" class="es-btn es-btn-primary es-btn-lg">
+                    Explorar Produtos <i class="fa-solid fa-arrow-right"></i>
+                </a>
             </div>
-
-          </div>
-          <!-- / Banner Blocks -->
-
         </div>
-      </div>
-    </div>
-  </section>
+    </section>
+</main>
 
-  <section id="latest-blog" class="py-5">
-    <div class="container-fluid">
+<div id="es-footer-slot"></div>
 
-      <div class="row">
-        <div class="section-header d-flex align-items-center justify-content-between my-5">
-          <h2 class="section-title">Eventos de lojas parceiras</h2>
-          <div class="btn-wrap align-right">
-            <a href="#" class="d-flex align-items-center nav-link">
-              Ver todos
-              <svg width="24" height="24">
-                <use xlink:href="#arrow-right"></use>
-              </svg>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-
-        <!-- Worten -->
-        <div class="col-sm-6 col-md-3">
-          <article class="post-item card border-0 shadow-sm p-3">
-            <div class="image-holder zoom-effect">
-              <a href="#">
-                <img src="images/worten1.png" class="card-img-top" alt="Worten">
-              </a>
-            </div>
-            <div class="card-body">
-              <div class="post-meta d-flex text-uppercase gap-3 my-2 align-items-center">
-                <div class="meta-categories">Worten</div>
-              </div>
-              <div class="post-header">
-                <h3 class="post-title">
-                  <a href="#" class="text-decoration-none">Worten Resolve</a>
-                </h3>
-                <p>Serviços rápidos e assistência técnica para os teus equipamentos.</p>
-              </div>
-            </div>
-          </article>
-        </div>
-
-        <!-- Fnac Flash Sales -->
-        <div class="col-sm-6 col-md-3">
-          <article class="post-item card border-0 shadow-sm p-3">
-            <div class="image-holder zoom-effect">
-              <a href="#">
-                <img src="images/fnac1.png" class="card-img-top" alt="Fnac">
-              </a>
-            </div>
-            <div class="card-body">
-              <div class="post-meta d-flex text-uppercase gap-3 my-2 align-items-center">
-                <div class="meta-categories">Fnac</div>
-              </div>
-              <div class="post-header">
-                <h3 class="post-title">
-                  <a href="#" class="text-decoration-none">Flash Sales</a>
-                </h3>
-                <p>Descontos exclusivos em tecnologia, livros e entretenimento.</p>
-              </div>
-            </div>
-          </article>
-        </div>
-
-        <!-- Fnac Tech Days -->
-        <div class="col-sm-6 col-md-3">
-          <article class="post-item card border-0 shadow-sm p-3">
-            <div class="image-holder zoom-effect">
-              <a href="#">
-                <img src="images/fnac2.png" class="card-img-top" alt="Fnac">
-              </a>
-            </div>
-            <div class="card-body">
-              <div class="post-meta d-flex text-uppercase gap-3 my-2 align-items-center">
-                <div class="meta-categories">Fnac</div>
-              </div>
-              <div class="post-header">
-                <h3 class="post-title">
-                  <a href="#" class="text-decoration-none">Tech Days</a>
-                </h3>
-                <p>Os melhores preços em tecnologia durante tempo limitado.</p>
-              </div>
-            </div>
-          </article>
-        </div>
-
-        <!-- Rádio Popular -->
-        <div class="col-sm-6 col-md-3">
-          <article class="post-item card border-0 shadow-sm p-3">
-            <div class="image-holder zoom-effect">
-              <a href="#">
-                <img src="images/radiopopula.png" class="card-img-top" alt="Rádio Popular">
-              </a>
-            </div>
-            <div class="card-body">
-              <div class="post-meta d-flex text-uppercase gap-3 my-2 align-items-center">
-                <div class="meta-categories">Rádio Popular</div>
-              </div>
-              <div class="post-header">
-                <h3 class="post-title">
-                  <a href="#" class="text-decoration-none">Preços de Loucura</a>
-                </h3>
-                <p>Promoções imperdíveis em eletrodomésticos e eletrónica.</p>
-              </div>
-            </div>
-          </article>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <section class="py-5">
-    <div class="container-fluid">
-
-      <div class="bg-secondary py-5 my-5 rounded-5"
-        style="background: url('images/bg-leaves-img-pattern.png') no-repeat;">
-
-        <div class="container my-5">
-          <div class="row">
-
-            <!-- Texto -->
-            <div class="col-md-6 p-5">
-              <div class="section-header">
-                <h2 class="section-title display-4">
-                  Poupa até <span class="text-primary">25% em eletrodomésticos</span>
-                </h2>
-              </div>
-              <p>
-                Aproveita as melhores promoções em tecnologia para casa: frigoríficos, máquinas de lavar,
-                aspiradores e muito mais. Subscreve e recebe ofertas exclusivas diretamente no teu email.
-              </p>
-            </div>
-
-            <!-- Formulário -->
-            <div class="col-md-6 p-5">
-              <form>
-
-                <div class="mb-3">
-                  <label for="name" class="form-label">Nome</label>
-                  <input type="text" class="form-control form-control-lg" id="name" placeholder="O teu nome">
-                </div>
-
-                <div class="mb-3">
-                  <label for="email" class="form-label">Email</label>
-                  <input type="email" class="form-control form-control-lg" id="email" placeholder="exemplo@email.com">
-                </div>
-
-                <div class="form-check form-check-inline mb-3">
-                  <input class="form-check-input" type="checkbox" id="subscribe">
-                  <label class="form-check-label" for="subscribe">
-                    Quero receber promoções e novidades
-                  </label>
-                </div>
-
-                <div class="d-grid gap-2">
-                  <button type="submit" class="btn btn-dark btn-lg">
-                    Receber desconto
-                  </button>
-                </div>
-
-              </form>
-            </div>
-
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-  </section>
-
-
-
-  <footer class="py-5">
-    <div class="container-fluid">
-      <div class="row">
-
-        <!-- Logo + redes -->
-        <div class="col-lg-3 col-md-6 col-sm-6">
-          <div class="footer-menu">
-            <img src="images/logo3.png" alt="logo" class="img-fluid">
-            <p class="mt-3">
-              A tua loja de eletrodomésticos com as melhores ofertas e parcerias em Portugal.
-            </p>
-
-            <div class="social-links mt-4">
-              <ul class="d-flex list-unstyled gap-2">
-                <li><a href="#" class="btn btn-outline-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width:38px;height:38px;" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a></li>
-                <li><a href="#" class="btn btn-outline-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width:38px;height:38px;" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a></li>
-                <li><a href="#" class="btn btn-outline-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width:38px;height:38px;" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a></li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sobre -->
-        <div class="col-md-2 col-sm-6">
-          <div class="footer-menu">
-            <h5 class="widget-title">Sobre</h5>
-            <ul class="menu-list list-unstyled">
-              <li><a href="#" class="nav-link">Sobre nós</a></li>
-              <li><a href="#" class="nav-link">Condições</a></li>
-              <li><a href="#" class="nav-link">Trabalhar connosco</a></li>
-              <li><a href="#" class="nav-link">Parcerias</a></li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- Apoio ao cliente -->
-        <div class="col-md-2 col-sm-6">
-          <div class="footer-menu">
-            <h5 class="widget-title">Apoio ao Cliente</h5>
-            <ul class="menu-list list-unstyled">
-              <li><a href="#" class="nav-link">FAQ</a></li>
-              <li><a href="#" class="nav-link">Contactos</a></li>
-              <li><a href="#" class="nav-link">Política de Privacidade</a></li>
-              <li><a href="#" class="nav-link">Devoluções</a></li>
-              <li><a href="#" class="nav-link">Entregas</a></li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- Parcerias -->
-        <div class="col-md-2 col-sm-6">
-          <div class="footer-menu">
-            <h5 class="widget-title">Parcerias</h5>
-            <ul class="menu-list list-unstyled">
-              <li><span class="nav-link">Worten</span></li>
-              <li><span class="nav-link">Fnac</span></li>
-              <li><span class="nav-link">Rádio Popular</span></li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- Newsletter -->
-        <div class="col-lg-3 col-md-6 col-sm-6">
-          <div class="footer-menu">
-            <h5 class="widget-title">Newsletter</h5>
-            <p>Recebe promoções exclusivas em eletrodomésticos.</p>
-
-            <form class="d-flex mt-3 gap-0">
-              <input class="form-control rounded-start rounded-0 bg-light" type="email" placeholder="O teu email">
-              <button class="btn btn-dark rounded-end rounded-0" type="submit">
-                Subscrever
-              </button>
-            </form>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </footer>
-
-  <div id="footer-bottom">
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-md-6 copyright">
-          <p>© 2026 EletroSync. Todos os direitos reservados.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-  <script src="js/jquery-1.11.0.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
-    crossorigin="anonymous"></script>
-  <script src="js/plugins.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/cart.js"></script>
-  <script src="js/script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/ui-layout.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/cart.js"></script>
 </body>
-
 </html>

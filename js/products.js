@@ -1,4 +1,14 @@
 // 1. Organização por categoria (Nomes batem com as Imagens)
+// Fallback por categoria para imagens em falta
+const FALLBACK_IMG = {
+  eletrodomesticos: 'images/frigo.png',
+  informatica:      'images/pctorre.png',
+  smartphones:      'images/airpods.png',
+  gaming:           'images/comando.png',
+  imagem:           'images/tv.png',
+  outros:           'images/airpods.png',
+};
+
 const catalog = {
   eletrodomesticos: [
     { name: "Frigorífico Combinado Samsung", image: "images/frigo.png" },
@@ -12,7 +22,7 @@ const catalog = {
   ],
   informatica: [
     { name: "Desktop Gaming PC Torre", image: "images/pctorre.png" },
-    { name: "MacBook Air M2", image: "images/macbook.png" },
+    { name: "MacBook Air M2", image: "images/pctorre.png" },
     { name: "Monitor Curvo 27\"", image: "images/tv.png" }
   ],
   smartphones: [
@@ -21,7 +31,7 @@ const catalog = {
     { name: "AirPods Pro (2ª Ger)", image: "images/airpods.png" }
   ],
   gaming: [
-    { name: "Consola PlayStation 5", image: "images/ps5.png" },
+    { name: "Consola PlayStation 5", image: "images/comando.png" },
     { name: "PC Gaming High-End", image: "images/pctorre.png" }
   ],
   imagem: [
@@ -29,9 +39,9 @@ const catalog = {
     { name: "Soundbar Surround 5.1", image: "images/tv.png" }
   ],
   outros: [
-    { name: "Cabo HDMI 2.1 High Speed", image: "images/cabo.png" },
-    { name: "Suporte de Parede para TV", image: "images/suporte.png" },
-    { name: "Pilha Alcalina AA (Pack 4)", image: "images/pilhas.png" }
+    { name: "Cabo HDMI 2.1 High Speed", image: "images/airpod.png" },
+    { name: "Suporte de Parede para TV", image: "images/tele.png" },
+    { name: "Pilha Alcalina AA (Pack 4)", image: "images/airpod.png" }
   ]
 };
 
@@ -80,37 +90,50 @@ const products = Array.from({ length: 100 }, () => {
 });
 
 function renderProduct(p) {
-  // Criar badges das lojas
-  const storeBadges = p.shops.map(s => 
-    `<span class="badge bg-light text-dark border me-1" style="font-size: 10px;">${s.name}</span>`
-  ).join("");
+    const fallbackImg = FALLBACK_IMG[p.category] || 'images/airpods.png';
+    const shopCount = (p.shops || []).length;
+    const discountBadge = p.discount
+        ? `<span class="product-discount-badge">-30%</span>`
+        : "";
 
-  return `
-    <div class="col">
-      <div class="product-item transition-hover p-3 shadow-sm">
-        ${p.discount ? `<span class="badge bg-success position-absolute m-2" style="top:0; left:0; z-index:10;">-30%</span>` : ""}
-        
-        <figure class="text-center">
-          <img src="${p.image}" class="img-fluid mb-3 product-image" style="max-height: 120px; object-fit: contain;">
-        </figure>
-        
-        <div class="product-content">
-            <h3 class="fs-6 text-dark mb-1" style="min-height: 38px; line-height: 1.2;">${p.name}</h3>
-            
-            <div class="d-flex align-items-center gap-1 mb-2">
-               <i class="fa-solid fa-star premium-star"></i>
-               <span class="small fw-bold">${p.rating}</span>
+    return `
+      <div class="col">
+        <div class="product-item">
+          ${discountBadge}
+          <figure>
+            <img src="${p.image}" alt="${escapeAttr(p.name)}" loading="lazy"
+                 onerror="this.onerror=null;this.src='${fallbackImg}';">
+          </figure>
+
+          <div class="product-info">
+            <h3 class="product-title">${p.name}</h3>
+
+            <div class="product-meta">
+              <span class="product-rating">
+                <i class="fa-solid fa-star"></i> ${p.rating}
+              </span>
+              <span class="product-shops-count">
+                <i class="fa-solid fa-store"></i> ${shopCount} ${shopCount === 1 ? 'loja' : 'lojas'}
+              </span>
             </div>
 
-            <div class="mb-2 d-flex flex-wrap">
-                ${storeBadges}
+            <div class="product-price-row">
+              <div>
+                <span class="product-price-label">Desde</span>
+                <span class="product-price">${p.minPrice}€</span>
+              </div>
+              <button class="product-cta" title="Ver detalhes" aria-label="Ver detalhes">
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
             </div>
-            
-            <span class="price fw-bold text-primary fs-6">desde ${p.minPrice}€</span>
+          </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
+}
+
+function escapeAttr(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 let swiperInstance; // Variável global para guardar o carrossel
 
@@ -130,7 +153,7 @@ function renderTo(containerId, list) {
             initSwiper();
         }, 100); 
     } else {
-        container.className = "row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4 pt-4 pb-5";
+        container.className = "row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3 pt-4 pb-5";
         container.innerHTML = list.map(renderProduct).join("");
     }
 }
@@ -213,13 +236,16 @@ function applyAllFilters(forcedSub = undefined) {
         activeSub = (activeSubBtn && !activeSubBtn.textContent.includes("Tudo em")) ? activeSubBtn.textContent.trim() : null;
     }
 
-    // 3. Pegar valores da Sidebar
-    const maxPrice = parseFloat(document.querySelector(".form-range").value);
-    const categoryCheckboxes = Array.from(document.querySelectorAll('.filter-group:nth-child(3) .filter-option'));
-    const promoChecked = categoryCheckboxes.some(opt => opt.textContent.includes("Promoção") && opt.querySelector('input').checked);
-    const eventXChecked = categoryCheckboxes.some(opt => opt.textContent.includes("Evento X") && opt.querySelector('input').checked);
-    const selectedStores = Array.from(document.querySelectorAll('.filter-group:nth-child(4) input[type="checkbox"]:checked'))
-                                .map(cb => cb.parentElement.textContent.trim());
+    // 3. Pegar valores da Sidebar (com defaults se os filtros não existirem)
+    const rangeEl = document.getElementById('filter-price') || document.querySelector(".form-range");
+    const maxPrice = rangeEl ? parseFloat(rangeEl.value) : Infinity;
+
+    const storeMap = { worten: 'Worten', fnac: 'Fnac', radiopopular: 'Radio Popular', pcdiga: 'PC Diga' };
+    const selectedStoreValues = Array.from(document.querySelectorAll('.store-filter:checked')).map(cb => cb.value);
+    const selectedStores = selectedStoreValues.map(v => storeMap[v] || v);
+
+    const promoChecked = false;
+    const eventXChecked = false;
 
     // 4. Filtragem Cruzada
     const filtered = products.filter(p => {
@@ -250,9 +276,13 @@ function filterBySub(cat, sub, btnElement) {
     applyAllFilters(sub);
 }
 
-document.querySelector(".filter-sidebar .btn-primary").addEventListener("click", () => {
-    applyAllFilters();
-});
+// Filtros: reagir a mudanças nos controlos (sem botão "Aplicar")
+document.querySelectorAll('.store-filter').forEach(cb => cb.addEventListener('change', () => applyAllFilters()));
+const priceInput = document.getElementById('filter-price') || document.querySelector('.form-range');
+if (priceInput) priceInput.addEventListener('input', () => applyAllFilters());
+// Botão "Aplicar" legacy (se existir na página antiga)
+const applyBtn = document.querySelector(".filter-sidebar .btn-primary");
+if (applyBtn) applyBtn.addEventListener("click", () => applyAllFilters());
 
 document.addEventListener("DOMContentLoaded", () => {
     // 1. Carregamos o Carrossel (independente da página/pesquisa)
@@ -348,21 +378,18 @@ document.querySelectorAll("#nav-tab .nav-link").forEach(tab => {
 });
 
 document.addEventListener('click', function(e) {
-    const card = e.target.closest('.transition-hover');
-    
-    if (card) {
-        // 1. Pegar o nome do produto do card que foi clicado
-        const productName = card.querySelector('h3').innerText;
-        
-        // 2. Encontrar o objeto completo do produto na nossa lista 'products'
-        const productData = products.find(p => p.name === productName);
-        
-        if (productData) {
-            // 3. Guardar no localStorage para a outra página ler
-            localStorage.setItem('selectedProduct', JSON.stringify(productData));
-            
-            // 4. Navegar para a página de detalhes
-            window.location.href = 'single-product.html';
-        }
+    // Ignorar cliques em botões/inputs/links internos do card (wishlist, etc.)
+    if (e.target.closest('.btn-wishlist, button, a[href]:not([href="#"])')) return;
+
+    const card = e.target.closest('.product-item, .transition-hover');
+    if (!card) return;
+
+    const titleEl = card.querySelector('.product-title, h3');
+    if (!titleEl) return;
+    const productName = titleEl.innerText;
+    const productData = products.find(p => p.name === productName);
+    if (productData) {
+        localStorage.setItem('selectedProduct', JSON.stringify(productData));
+        window.location.href = 'single-product.html';
     }
 });
