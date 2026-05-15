@@ -22,6 +22,9 @@ app.use('/api/favorites', favoritesRoutes);
 const cartRoutes = require('./routes/cart');
 app.use('/api/cart', cartRoutes);
 
+const productsRoutes = require('./routes/products');
+app.use('/api/products', productsRoutes);
+
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor a correr em http://localhost:${PORT}`);

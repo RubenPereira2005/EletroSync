@@ -162,17 +162,25 @@
                     <span>(com base em avaliações de utilizadores)</span>
                 </div>
 
-                <p class="text-muted">
+                <p class="text-muted" id="prodDesc">
                     Compara preços deste produto nas lojas parceiras e compra onde for mais barato.
                     Abaixo encontras todas as lojas que têm este produto, ordenadas pelo preço mais baixo.
                 </p>
 
-                <div class="price-hero">
+                <div id="specsContainer" class="mt-3 mb-4" style="display: none;">
+                    <h6 class="fw-bold mb-2">Principais Características:</h6>
+                    <ul id="prodSpecs" class="text-muted" style="font-size: 0.875rem; padding-left: 1.2rem;">
+                    </ul>
+                </div>
+
+                <div class="price-hero position-relative">
+                    <span id="promoBadge" class="position-absolute top-0 end-0 mt-3 me-3 badge bg-danger fs-6" style="display: none;"></span>
                     <div class="flex-grow-1">
                         <div class="price-hero-label">Preço mais baixo</div>
                         <div class="d-flex align-items-baseline gap-1">
                             <span class="price-hero-value" id="priceBest">—</span>
                             <span class="price-hero-currency">€</span>
+                            <span class="text-muted text-decoration-line-through ms-2" id="priceOld" style="font-size:1.25rem; display:none;"></span>
                         </div>
                         <div class="price-hero-savings" id="priceSavings"></div>
                     </div>

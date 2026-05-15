@@ -9,44 +9,8 @@ const FALLBACK_IMG = {
   outros:           'images/airpods.png',
 };
 
-const catalog = {
-  eletrodomesticos: [
-    { name: "Frigorífico Combinado Samsung", image: "images/frigo.png" },
-    { name: "Frigorífico Side-by-Side LG", image: "images/frigo1.png" },
-    { name: "Micro-ondas Digital 25L", image: "images/micro.png" },
-    { name: "Fogão a Gás de 4 Bocas", image: "images/fugao.png" },
-    { name: "Forno de Encastrar Elétrico", image: "images/forni.png" },
-    { name: "Máquina de Lavar Roupa 9kg", image: "images/lava.png" },
-    { name: "Máquina de Lavar Loiça Bosch", image: "images/loiça.png" },
-    { name: "Torradeira Inox 2 Fatias", image: "images/torras1.png" }
-  ],
-  informatica: [
-    { name: "Desktop Gaming PC Torre", image: "images/pctorre.png" },
-    { name: "MacBook Air M2", image: "images/pctorre.png" },
-    { name: "Monitor Curvo 27\"", image: "images/tv.png" }
-  ],
-  smartphones: [
-    { name: "iPhone 15 Pro Max", image: "images/tele.png" },
-    { name: "OnePlus Nord 3", image: "images/tele.png" },
-    { name: "AirPods Pro (2ª Ger)", image: "images/airpods.png" }
-  ],
-  gaming: [
-    { name: "Consola PlayStation 5", image: "images/comando.png" },
-    { name: "PC Gaming High-End", image: "images/pctorre.png" }
-  ],
-  imagem: [
-    { name: "Smart TV LG OLED 65\"", image: "images/tv.png" },
-    { name: "Soundbar Surround 5.1", image: "images/tv.png" }
-  ],
-  outros: [
-    { name: "Cabo HDMI 2.1 High Speed", image: "images/airpod.png" },
-    { name: "Suporte de Parede para TV", image: "images/tele.png" },
-    { name: "Pilha Alcalina AA (Pack 4)", image: "images/airpod.png" }
-  ]
-};
-
-const categories = Object.keys(catalog);
-const storesList = ["Worten", "Fnac", "Radio Popular", "PC Diga"];
+// Aqui vamos guardar os produtos carregados da API
+let products = [];
 
 // 1. Mover o mapeamento para FORA do loop
 const subMapping = {
@@ -58,43 +22,31 @@ const subMapping = {
     outros: ["Cabos", "Pilhas"]
 };
 
-const products = Array.from({ length: 100 }, () => { 
-    const cat = categories[Math.floor(Math.random() * categories.length)];
-    const items = catalog[cat];
-    const selected = items[Math.floor(Math.random() * items.length)];
-
-    // Agora o possiveisSubs funciona porque o subMapping já existe acima
-    const possiveisSubs = subMapping[cat] || ["Geral"];
-    const subSorteada = possiveisSubs[Math.floor(Math.random() * possiveisSubs.length)];
-
-    const numShops = Math.floor(Math.random() * 4) + 1;
-    const shuffledStores = [...storesList].sort(() => 0.5 - Math.random());
-    const productShops = shuffledStores.slice(0, numShops).map(store => ({
-        name: store,
-        price: (Math.random() * 1200 + 50).toFixed(2)
-    }));
-
-    const minPrice = Math.min(...productShops.map(s => parseFloat(s.price)));
-
-    return {
-        name: selected.name,
-        image: selected.image,
-        category: cat,
-        subcategory: subSorteada, 
-        rating: (Math.random() * 1 + 4).toFixed(1),
-        discount: Math.random() > 0.7, 
-        eventX: Math.random() > 0.8,    
-        shops: productShops,
-        minPrice: minPrice.toFixed(2)
-    };
-});
-
 function renderProduct(p) {
     const fallbackImg = FALLBACK_IMG[p.category] || 'images/airpods.png';
     const shopCount = (p.shops || []).length;
     const discountBadge = p.discount
-        ? `<span class="product-discount-badge">-30%</span>`
+        ? `<span class="product-discount-badge">-${p.discountPercent}%</span>`
         : "";
+
+    let priceHtml = `
+      <div>
+        <span class="product-price-label">Desde</span>
+        <span class="product-price">${parseFloat(p.minPrice).toFixed(2)}€</span>
+      </div>
+    `;
+
+    if (p.discount && p.oldPrice) {
+        priceHtml = `
+          <div>
+            <span class="product-price-label">Desde</span>
+            <div class="d-flex align-items-center gap-2">
+                <span class="product-price">${parseFloat(p.minPrice).toFixed(2)}€</span>
+                <span class="text-muted text-decoration-line-through" style="font-size:0.85rem;">${p.oldPrice}€</span>
+            </div>
+          </div>
+        `;
+    }
 
     return `
       <div class="col">
@@ -115,16 +67,13 @@ function renderProduct(p) {
               <span class="product-rating">
                 <i class="fa-solid fa-star"></i> ${p.rating}
               </span>
-              <span class="product-shops-count">
-                <i class="fa-solid fa-store"></i> ${shopCount} ${shopCount === 1 ? 'loja' : 'lojas'}
+              <span class="product-shops-count text-primary" style="cursor: help;" title="Clica para ver preços noutras lojas">
+                <i class="fa-solid fa-magnifying-glass-chart"></i> Comparar preços
               </span>
             </div>
 
             <div class="product-price-row">
-              <div>
-                <span class="product-price-label">Desde</span>
-                <span class="product-price">${p.minPrice}€</span>
-              </div>
+              ${priceHtml}
               <button class="product-cta" title="Ver detalhes" aria-label="Ver detalhes">
                 <i class="fa-solid fa-arrow-right"></i>
               </button>
@@ -310,7 +259,25 @@ if (priceInput) priceInput.addEventListener('input', () => applyAllFilters());
 const applyBtn = document.querySelector(".filter-sidebar .btn-primary");
 if (applyBtn) applyBtn.addEventListener("click", () => applyAllFilters());
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    // 0. CARREGAR PRODUTOS DA API SERPER
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const searchQuery = urlParams.get('query');
+
+        let endpoint = '/api/products/all';
+        if (searchQuery) {
+            endpoint = `/api/products/search?q=${encodeURIComponent(searchQuery)}`;
+        }
+
+        const res = await fetch(endpoint);
+        const data = await res.json();
+        products = data.products || [];
+    } catch (err) {
+        console.error("Erro ao carregar produtos:", err);
+        products = [];
+    }
+
     // 1. Carregamos o Carrossel (independente da página/pesquisa)
     const novidades = products.slice(0, 15);
     renderTo("carousel-novidades", novidades);
@@ -323,8 +290,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- PRIORIDADE 1: PESQUISA ---
     if (searchQuery) {
-        const termo = searchQuery.toLowerCase().trim();
-        const resultados = products.filter(p => p.name.toLowerCase().includes(termo));
+        // Como a pesquisa já foi feita no Google Shopping, todos os produtos retornados são o resultado
+        const resultados = products;
 
         // 1. ESCONDER O CARROSSEL DE NOVIDADES (Para não veres a PS5, etc.)
         const carouselSection = document.querySelector('.py-4.overflow-hidden.border-bottom');
