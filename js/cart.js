@@ -82,15 +82,8 @@
         if (!res.ok) throw new Error('Falha a limpar carrinho.');
     }
 
-    // ── localStorage (fallback quando não autenticado) ─────────────────────
-    function lsGet() {
-        try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; }
-        catch { return []; }
-    }
-
-    function lsSet(list) {
-        localStorage.setItem(LS_KEY, JSON.stringify(list));
-    }
+    // Limpa lixo antigo do localStorage (de versões anteriores) — o carrinho só vive no Supabase
+    try { localStorage.removeItem(LS_KEY); } catch {}
 
     // ── Preços ──────────────────────────────────────────────────────────────
     function getUnitPrice(item) {
@@ -122,81 +115,45 @@
         return items.reduce((sum, item) => sum + (item.quantity || 1), 0);
     }
 
-    // ── Operações ───────────────────────────────────────────────────────────
+    // ── Operações (apenas com login — sem fallback localStorage) ───────────
+    function redirectToLogin() {
+        window.location.href = '/login.html';
+    }
+
     async function refresh() {
-        if (isLoggedIn()) {
-            try {
-                cache = await apiGet();
-            } catch (e) {
-                console.error('[cart] fallback para localStorage:', e);
-                cache = lsGet();
-            }
-        } else {
-            cache = lsGet();
-        }
+        if (!isLoggedIn()) { cache = []; render(); updateBadges(); return; }
+        try { cache = await apiGet(); }
+        catch (e) { console.error('[cart] erro a carregar:', e); cache = []; }
         render();
         updateBadges();
     }
 
     async function addToCart(product, quantity = 1) {
         if (!product || !product.name) return;
-
-        if (isLoggedIn()) {
-            try { await apiAdd(product, quantity); }
-            catch (e) { console.error('[cart] add fallback:', e); return localAdd(product, quantity); }
-        } else {
-            localAdd(product, quantity);
-        }
+        if (!isLoggedIn()) { redirectToLogin(); return; }
+        try { await apiAdd(product, quantity); }
+        catch (e) { console.error('[cart] add:', e); return; }
         await refresh();
-    }
-
-    function localAdd(product, quantity) {
-        const list = lsGet();
-        const existing = list.find(i => i.name === product.name);
-        if (existing) existing.quantity = (existing.quantity || 1) + quantity;
-        else list.push({ ...product, quantity });
-        lsSet(list);
     }
 
     async function removeFromCart(name) {
-        if (isLoggedIn()) {
-            try { await apiRemove(name); }
-            catch (e) { console.error('[cart] remove fallback:', e); return localRemove(name); }
-        } else {
-            localRemove(name);
-        }
+        if (!isLoggedIn()) return;
+        try { await apiRemove(name); }
+        catch (e) { console.error('[cart] remove:', e); return; }
         await refresh();
-    }
-
-    function localRemove(name) {
-        lsSet(lsGet().filter(i => i.name !== name));
     }
 
     async function updateQuantity(name, quantity) {
-        if (isLoggedIn()) {
-            try { await apiUpdate(name, quantity); }
-            catch (e) { console.error('[cart] update fallback:', e); return localUpdate(name, quantity); }
-        } else {
-            localUpdate(name, quantity);
-        }
+        if (!isLoggedIn()) return;
+        try { await apiUpdate(name, quantity); }
+        catch (e) { console.error('[cart] update:', e); return; }
         await refresh();
     }
 
-    function localUpdate(name, quantity) {
-        const list = lsGet();
-        const item = list.find(i => i.name === name);
-        if (!item) return;
-        if (quantity <= 0) lsSet(list.filter(i => i.name !== name));
-        else { item.quantity = quantity; lsSet(list); }
-    }
-
     async function clearCart() {
-        if (isLoggedIn()) {
-            try { await apiClear(); }
-            catch (e) { console.error('[cart] clear fallback:', e); lsSet([]); }
-        } else {
-            lsSet([]);
-        }
+        if (!isLoggedIn()) return;
+        try { await apiClear(); }
+        catch (e) { console.error('[cart] clear:', e); return; }
         await refresh();
     }
 
@@ -229,14 +186,25 @@
         const items = cache;
 
         if (items.length === 0) {
-            body.innerHTML = `
-                <div class="cart-empty">
-                    <div class="cart-empty-icon"><i class="fa-solid fa-cart-shopping"></i></div>
-                    <h5>O teu carrinho está vazio</h5>
-                    <p>Adiciona produtos para começares a comparar preços entre lojas.</p>
-                    <a href="product.html" class="es-btn es-btn-primary">Explorar Produtos</a>
-                </div>
-            `;
+            if (!isLoggedIn()) {
+                body.innerHTML = `
+                    <div class="cart-empty">
+                        <div class="cart-empty-icon"><i class="fa-solid fa-lock"></i></div>
+                        <h5>Inicia sessão para usar o carrinho</h5>
+                        <p>O teu carrinho fica guardado na tua conta para o veres em qualquer dispositivo.</p>
+                        <a href="login.html" class="es-btn es-btn-primary">Iniciar sessão</a>
+                    </div>
+                `;
+            } else {
+                body.innerHTML = `
+                    <div class="cart-empty">
+                        <div class="cart-empty-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+                        <h5>O teu carrinho está vazio</h5>
+                        <p>Adiciona produtos para começares a comparar preços entre lojas.</p>
+                        <a href="product.html" class="es-btn es-btn-primary">Explorar Produtos</a>
+                    </div>
+                `;
+            }
             return;
         }
 

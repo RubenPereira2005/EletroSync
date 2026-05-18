@@ -1,8 +1,8 @@
 /**
  * favorites.js — API unificada para gestão de favoritos.
  *
- * Quando o utilizador está autenticado, usa a API Node + Supabase.
- * Quando não está, cai para localStorage (para não perder a UX).
+ * Apenas funciona com sessão iniciada (dados ficam no Supabase).
+ * Sem login, qualquer tentativa de adicionar/remover redireciona para o login.
  *
  * Todas as funções devolvem promises.
  */
@@ -11,6 +11,8 @@
     'use strict';
 
     const LS_KEY = 'myFavorites';
+    // Limpa lixo antigo do localStorage (de versões anteriores)
+    try { localStorage.removeItem(LS_KEY); } catch {}
 
     // ── Autenticação ────────────────────────────────────────────────────────
     function getAccessToken() {
@@ -58,47 +60,31 @@
         if (!res.ok) throw new Error('Falha a remover favorito.');
     }
 
-    // ── localStorage (fallback) ─────────────────────────────────────────────
-    function lsGet() {
-        try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; }
-        catch { return []; }
+    // ── API pública (apenas com login — sem fallback localStorage) ─────────
+    function redirectToLogin() {
+        window.location.href = '/login.html';
     }
 
-    function lsSet(list) {
-        localStorage.setItem(LS_KEY, JSON.stringify(list));
-    }
-
-    // ── API pública ─────────────────────────────────────────────────────────
     async function getFavorites() {
-        if (isLoggedIn()) {
-            try { return await apiGet(); }
-            catch (e) { console.error('[favorites] fallback para localStorage:', e); }
-        }
-        return lsGet();
+        if (!isLoggedIn()) return [];
+        try { return await apiGet(); }
+        catch (e) { console.error('[favorites] erro:', e); return []; }
     }
 
     async function addFavorite(product) {
-        if (isLoggedIn()) {
-            try { await apiAdd(product); return; }
-            catch (e) { console.error('[favorites] fallback para localStorage:', e); }
-        }
-        const list = lsGet();
-        if (!list.some(p => p.name === product.name)) {
-            list.push(product);
-            lsSet(list);
-        }
+        if (!isLoggedIn()) { redirectToLogin(); return; }
+        try { await apiAdd(product); }
+        catch (e) { console.error('[favorites] add:', e); }
     }
 
     async function removeFavorite(productId) {
-        if (isLoggedIn()) {
-            try { await apiRemove(productId); return; }
-            catch (e) { console.error('[favorites] fallback para localStorage:', e); }
-        }
-        const list = lsGet().filter(p => p.name !== productId);
-        lsSet(list);
+        if (!isLoggedIn()) return;
+        try { await apiRemove(productId); }
+        catch (e) { console.error('[favorites] remove:', e); }
     }
 
     async function isFavorite(productId) {
+        if (!isLoggedIn()) return false;
         const list = await getFavorites();
         return list.some(p => p.name === productId);
     }

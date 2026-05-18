@@ -67,6 +67,17 @@
                 <i class="fa-solid fa-compass"></i> Explorar Produtos
             </a>
         </div>
+
+        <div id="loginMsg" class="es-empty d-none">
+            <div class="es-empty-icon">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h4>Inicia sessão para ver os teus favoritos</h4>
+            <p>Os favoritos ficam guardados na tua conta para os veres em qualquer dispositivo.</p>
+            <a href="login.html" class="es-btn es-btn-primary es-btn-lg mt-3">
+                <i class="fa-solid fa-right-to-bracket"></i> Iniciar sessão
+            </a>
+        </div>
     </div>
 </main>
 
@@ -96,6 +107,16 @@
     async function renderFavorites() {
         const favList = document.getElementById('favList');
         const emptyMsg = document.getElementById('emptyMsg');
+        const loginMsg = document.getElementById('loginMsg');
+
+        // Sem sessão → mostrar prompt de login (não chama API)
+        if (!window.Favorites.isLoggedIn()) {
+            favList.innerHTML = '';
+            emptyMsg.classList.add('d-none');
+            loginMsg.classList.remove('d-none');
+            return;
+        }
+        loginMsg.classList.add('d-none');
 
         cachedFavorites = await window.Favorites.getFavorites();
 

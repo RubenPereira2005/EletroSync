@@ -3,3 +3,6 @@
 
 # Variáveis de ambiente
 .env
+
+# Cache persistente da API Serper (dados temporários)
+/cache

@@ -9,21 +9,27 @@
     'use strict';
 
     const currentPage = (window.location.pathname.split('/').pop() || 'index.html').replace(/\?.*$/, '');
+    const currentCat = new URLSearchParams(window.location.search).get('cat') || '';
 
     const navLinks = [
-        { href: 'index.html',                      label: 'Início' },
-        { href: 'product.html',                    label: 'Todos os Produtos' },
-        { href: 'product.html?cat=eletrodomesticos', label: 'Eletrodomésticos' },
-        { href: 'product.html?cat=informatica',    label: 'Informática' },
-        { href: 'product.html?cat=smartphones',    label: 'Smartphones' },
-        { href: 'product.html?cat=imagem',         label: 'Imagem e Som' },
-        { href: 'product.html?cat=jogos',          label: 'Gaming' },
+        { href: 'index.html',                        label: 'Início',              page: 'index.html',   cat: null },
+        { href: 'product.html',                      label: 'Todos os Produtos',   page: 'product.html', cat: '' },
+        { href: 'product.html?cat=eletrodomesticos', label: 'Eletrodomésticos',    page: 'product.html', cat: 'eletrodomesticos' },
+        { href: 'product.html?cat=informatica',      label: 'Informática',         page: 'product.html', cat: 'informatica' },
+        { href: 'product.html?cat=smartphones',      label: 'Smartphones',         page: 'product.html', cat: 'smartphones' },
+        { href: 'product.html?cat=imagem',           label: 'Imagem e Som',        page: 'product.html', cat: 'imagem' },
+        { href: 'product.html?cat=jogos',            label: 'Gaming',              page: 'product.html', cat: 'jogos' },
     ];
 
     function buildHeader() {
         const navHtml = navLinks.map(l => {
-            const active = l.href.split('#')[0] === currentPage ? ' active' : '';
-            return `<a href="${l.href}" class="${active.trim()}">${l.label}</a>`;
+            let isActive = false;
+            if (l.cat === null) {
+                isActive = l.page === currentPage;
+            } else {
+                isActive = l.page === currentPage && l.cat === currentCat;
+            }
+            return `<a href="${l.href}" class="${isActive ? 'active' : ''}">${l.label}</a>`;
         }).join('');
 
         return `

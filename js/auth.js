@@ -61,11 +61,10 @@ function updateUIForLoggedOut() {
         link.innerHTML = '<i class="fa-solid fa-right-to-bracket fs-5" style="padding: 2px;"></i>';
     });
 
-    // Se estiver explicitamente na página de perfil, alertar e redirecionar
+    // Se estiver explicitamente na página de perfil, redirecionar para o login
     const path = window.location.pathname;
     if (path.includes('profile') && !path.includes('product-profile')) {
-        alert("Não tens sessão iniciada!");
-        window.location.href = '/login.html';
+        window.location.replace('/login.html');
     }
 }
 

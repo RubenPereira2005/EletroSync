@@ -922,3 +922,25 @@ a:hover { color: var(--es-primary); }
 @media (max-width: 480px) {
     #offcanvasCart { width: 100vw !important; }
 }
+
+/* =============================================================================
+ * LOADING STATE (grids de produtos)
+ * ============================================================================= */
+
+.products-loading-wrap {
+    width: 100%;
+    min-height: 380px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.products-loading {
+    text-align: center;
+    padding: var(--es-space-7) var(--es-space-5);
+    max-width: 460px;
+    margin: 0 auto;
+}
+
+.products-loading h5 { color: var(--es-text); margin-top: var(--es-space-3); }
+.products-loading p { color: var(--es-text-muted); }

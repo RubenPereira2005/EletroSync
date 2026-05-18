@@ -90,34 +90,73 @@ document.addEventListener("DOMContentLoaded", async () => {
         }).join('');
     }
 
-    // Renderizar imediatamente a loja original que vem da página principal
-    renderComparisonTable(data.shops || []);
-
-    // Adicionar um indicador de carregamento
+    // Mostrar loading (NÃO renderizar a oferta original — pode ter preço impreciso
+    // da agregação Serper Shopping; esperamos pelas ofertas validadas do /compare)
     const container = document.getElementById('shopsComparison');
-    const loadingRow = `<tr id="loading-row"><td colspan="4" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin"></i> A pesquisar preços reais noutras lojas...</td></tr>`;
-    container.insertAdjacentHTML('beforeend', loadingRow);
+    container.innerHTML = `
+        <tr id="loading-row">
+            <td colspan="4" class="text-center py-5 text-muted">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.25rem;"></i>
+                <div class="mt-2">A confirmar preços nas lojas portuguesas…</div>
+            </td>
+        </tr>
+    `;
 
-    // Buscar preços reais das outras lojas via API
+    // Preço hero em loading
+    document.getElementById('priceBest').textContent = '—';
+    document.getElementById('priceCurrency').style.opacity = '0.4';
+    const oldEl = document.getElementById('priceOld');
+    const badgeEl = document.getElementById('promoBadge');
+    if (oldEl) oldEl.style.display = 'none';
+    if (badgeEl) badgeEl.style.display = 'none';
+    document.getElementById('priceSavings').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> A confirmar nas lojas…';
+
+    // Desabilitar carrinho até termos preço fiável
+    const cartBtnInit = document.getElementById('addToCartBtn');
+    if (cartBtnInit) {
+        cartBtnInit.disabled = true;
+        cartBtnInit.style.opacity = '0.5';
+    }
+
+    // Buscar preços reais das outras lojas via API (apenas ofertas validadas)
     try {
         const res = await fetch(`/api/products/compare?q=${encodeURIComponent(data.name)}`);
         const compareData = await res.json();
-        
-        if (compareData.shops && compareData.shops.length > 0) {
-            // Misturar a loja original com as novas (removendo lojas duplicadas)
-            const allShopsMap = new Map();
-            (data.shops || []).forEach(s => allShopsMap.set(s.name, s));
-            compareData.shops.forEach(s => allShopsMap.set(s.name, s));
-            
-            const finalShops = Array.from(allShopsMap.values());
-            renderComparisonTable(finalShops);
-            
-            // Atualizar o objeto original para manter consistência no carrinho
-            data.shops = finalShops;
-            data.minPrice = finalShops.slice().sort((a,b) => parseFloat(a.price) - parseFloat(b.price))[0].price;
+        const validatedShops = compareData.shops || [];
+
+        // Remover linha de loading
+        const loadingEl = document.getElementById('loading-row');
+        if (loadingEl) loadingEl.remove();
+
+        if (validatedShops.length > 0) {
+            // Restaurar opacidade do € e renderizar
+            document.getElementById('priceCurrency').style.opacity = '';
+            renderComparisonTable(validatedShops);
+            data.shops = validatedShops;
+            data.minPrice = validatedShops.slice().sort((a,b) => parseFloat(a.price) - parseFloat(b.price))[0].price;
             localStorage.setItem('selectedProduct', JSON.stringify(data));
+            // Reativar botão de carrinho
+            const cartBtnEnable = document.getElementById('addToCartBtn');
+            if (cartBtnEnable) {
+                cartBtnEnable.disabled = false;
+                cartBtnEnable.style.opacity = '';
+            }
         } else {
-            document.getElementById('loading-row').remove();
+            // Nenhuma loja confirmou ter este modelo exato — esconder bloco de preço
+            // e mostrar aviso amarelo
+            document.getElementById('priceHeroBlock').style.display = 'none';
+            document.getElementById('noShopsWarning').style.display = 'block';
+            // Esconder a secção de comparação
+            const compSection = document.querySelector('.comparison');
+            if (compSection) compSection.style.display = 'none';
+            // Desabilitar "Adicionar ao Carrinho" — sem preço fiável
+            const cartBtn = document.getElementById('addToCartBtn');
+            if (cartBtn) {
+                cartBtn.disabled = true;
+                cartBtn.title = 'Indisponível: este modelo não foi confirmado nas lojas.';
+                cartBtn.style.opacity = '0.5';
+                cartBtn.style.cursor = 'not-allowed';
+            }
         }
     } catch(e) {
         console.error("Erro a buscar comparação:", e);

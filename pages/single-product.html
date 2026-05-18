@@ -173,16 +173,30 @@
                     </ul>
                 </div>
 
-                <div class="price-hero position-relative">
+                <div class="price-hero position-relative" id="priceHeroBlock">
                     <span id="promoBadge" class="position-absolute top-0 end-0 mt-3 me-3 badge bg-danger fs-6" style="display: none;"></span>
                     <div class="flex-grow-1">
                         <div class="price-hero-label">Preço mais baixo</div>
                         <div class="d-flex align-items-baseline gap-1">
                             <span class="price-hero-value" id="priceBest">—</span>
-                            <span class="price-hero-currency">€</span>
+                            <span class="price-hero-currency" id="priceCurrency">€</span>
                             <span class="text-muted text-decoration-line-through ms-2" id="priceOld" style="font-size:1.25rem; display:none;"></span>
                         </div>
                         <div class="price-hero-savings" id="priceSavings"></div>
+                    </div>
+                </div>
+
+                <!-- Aviso quando nenhuma loja confirma o produto -->
+                <div id="noShopsWarning" class="alert alert-warning" style="display:none; border-radius:var(--es-radius-lg); border: 1px solid #f5c54a; background:#fff8e6;">
+                    <div class="d-flex gap-3 align-items-start">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.5rem; color: #c87b00;"></i>
+                        <div>
+                            <h5 class="mb-1" style="font-size: 1rem;">Modelo não confirmado nas lojas parceiras</h5>
+                            <p class="text-muted small mb-0">
+                                Não conseguimos confirmar este modelo exato nas lojas portuguesas que comparamos
+                                (Worten, Fnac, Rádio Popular, PC Diga). Tenta pesquisar pelo modelo na loja de tua escolha.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -217,6 +231,16 @@
                 </thead>
                 <tbody id="shopsComparison"></tbody>
             </table>
+        </div>
+        <div class="px-4 py-3" style="background:#fff8e6; border-top: 1px solid #f5c54a; font-size: 0.875rem; color: #6b4f00; display: flex; gap: 10px; align-items: start;">
+            <i class="fa-solid fa-circle-info" style="margin-top: 3px; font-size: 1rem; color: #d97706;"></i>
+            <span>
+                <strong>Preços indicativos.</strong> Os preços são obtidos via Google Shopping
+                e podem ter uma <strong>diferença de ±5€</strong> em relação ao site da loja
+                (devido a atualizações em tempo real ou vendedores parceiros).
+                Ao clicar em <em>Ir à loja</em>, vais para a página oficial do produto onde
+                podes confirmar o preço atualizado antes de comprares.
+            </span>
         </div>
     </div>
 </main>

@@ -50,7 +50,7 @@ function renderProduct(p) {
 
     return `
       <div class="col">
-        <div class="product-item">
+        <div class="product-item" data-product-name="${escapeAttr(p.name)}">
           ${discountBadge}
           <button class="product-fav-btn floating-fav" data-product="${escapeAttr(p.name)}" title="Adicionar aos favoritos" aria-label="Favorito">
             <i class="fa-regular fa-heart"></i>
@@ -74,9 +74,9 @@ function renderProduct(p) {
 
             <div class="product-price-row">
               ${priceHtml}
-              <button class="product-cta" title="Ver detalhes" aria-label="Ver detalhes">
+              <span class="product-cta" title="Ver detalhes" aria-hidden="true">
                 <i class="fa-solid fa-arrow-right"></i>
-              </button>
+              </span>
             </div>
           </div>
         </div>
@@ -259,8 +259,25 @@ if (priceInput) priceInput.addEventListener('input', () => applyAllFilters());
 const applyBtn = document.querySelector(".filter-sidebar .btn-primary");
 if (applyBtn) applyBtn.addEventListener("click", () => applyAllFilters());
 
+function showLoadingInGrids() {
+    const loadingHtml = `
+        <div class="products-loading">
+            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">A carregar…</span>
+            </div>
+            <h5 class="text-muted mb-1">A carregar produtos…</h5>
+            <p class="text-muted small mb-0">Estamos a buscar as melhores ofertas nas lojas portuguesas</p>
+        </div>
+    `;
+    document.querySelectorAll('[id^="grid-"]').forEach(el => {
+        el.className = 'products-loading-wrap';
+        el.innerHTML = loadingHtml;
+    });
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
     // 0. CARREGAR PRODUTOS DA API SERPER
+    showLoadingInGrids();
     try {
         const urlParams = new URLSearchParams(window.location.search);
         const searchQuery = urlParams.get('query');
@@ -276,6 +293,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (err) {
         console.error("Erro ao carregar produtos:", err);
         products = [];
+    }
+
+    // Se não veio nada, mostrar estado de erro
+    if (products.length === 0) {
+        document.querySelectorAll('[id^="grid-"]').forEach(el => {
+            el.innerHTML = `
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="fa-solid fa-circle-exclamation text-muted mb-3" style="font-size: 2.5rem;"></i>
+                        <h5 class="text-muted">Não conseguimos carregar os produtos agora</h5>
+                        <p class="text-muted small">Tenta atualizar a página dentro de alguns segundos.</p>
+                    </div>
+                </div>
+            `;
+        });
+        return;
     }
 
     // 1. Carregamos o Carrossel (independente da página/pesquisa)
@@ -371,15 +404,17 @@ document.querySelectorAll("#nav-tab .nav-link").forEach(tab => {
 });
 
 document.addEventListener('click', function(e) {
-    // Ignorar cliques em botões/inputs/links internos do card (wishlist, etc.)
-    if (e.target.closest('.btn-wishlist, button, a[href]:not([href="#"])')) return;
+    // Ignorar cliques em botões interativos dentro do card (favoritos, etc.)
+    if (e.target.closest('.product-fav-btn, .btn-wishlist, a[href]:not([href="#"])')) return;
 
     const card = e.target.closest('.product-item, .transition-hover');
     if (!card) return;
 
-    const titleEl = card.querySelector('.product-title, h3');
-    if (!titleEl) return;
-    const productName = titleEl.innerText;
+    // Identificar produto pelo data attribute (mais fiável do que innerText)
+    const productName = card.getAttribute('data-product-name')
+        || card.querySelector('.product-title, h3')?.innerText;
+    if (!productName) return;
+
     const productData = products.find(p => p.name === productName);
     if (productData) {
         localStorage.setItem('selectedProduct', JSON.stringify(productData));

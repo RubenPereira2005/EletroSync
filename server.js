@@ -28,4 +28,9 @@ app.use('/api/products', productsRoutes);
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor a correr em http://localhost:${PORT}`);
+
+  // Arrancar auto-refresh agendado da cache Serper (corre 2x/dia: 6h e 18h)
+  if (typeof productsRoutes.scheduleAutoRefresh === 'function') {
+    productsRoutes.scheduleAutoRefresh(PORT);
+  }
 });
