@@ -113,21 +113,25 @@ function msUntilNextRefresh() {
 }
 
 async function refreshAllProducts(port) {
+    const startedAt = new Date().toISOString();
     try {
-        console.log('[auto-refresh] A limpar cache e a re-popular /all...');
+        console.log(`[auto-refresh] ⏰ A executar refresh agendado às ${startedAt}...`);
         // Limpa só a cache de produtos/preços (URLs ficam — não mudam quase nunca)
+        let cleared = 0;
         for (const key of Object.keys(cache)) {
             if (key.startsWith('all_') || key.startsWith('search_') || key.startsWith('compare_')) {
                 delete cache[key];
+                cleared++;
             }
         }
         persistCache();
+        console.log(`[auto-refresh] Cache limpa: ${cleared} entradas removidas. A chamar /all para repopular...`);
         // Re-popula /all via chamada interna
         const res = await fetch(`http://localhost:${port}/api/products/all`);
         const data = await res.json();
-        console.log(`[auto-refresh] Cache repopulada com ${data.total || 0} produtos.`);
+        console.log(`[auto-refresh] ✅ Refresh concluído com ${data.total || 0} produtos a ${new Date().toISOString()}.`);
     } catch (e) {
-        console.error('[auto-refresh] Erro:', e.message);
+        console.error('[auto-refresh] ❌ Erro:', e.message);
     }
 }
 

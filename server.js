@@ -25,6 +25,17 @@ app.use('/api/cart', cartRoutes);
 const productsRoutes = require('./routes/products');
 app.use('/api/products', productsRoutes);
 
+// Endpoint leve para UptimeRobot manter o servidor acordado.
+// Devolve um pequeno JSON com uptime — não consome banda nem créditos Serper.
+const SERVER_START = Date.now();
+app.get('/api/health', (req, res) => {
+  res.json({
+    ok: true,
+    uptimeSeconds: Math.round((Date.now() - SERVER_START) / 1000),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor a correr em http://localhost:${PORT}`);
