@@ -145,7 +145,7 @@
                             ${catLabel ? `<span class="es-badge es-badge-neutral" style="align-self:flex-start;">${catLabel}</span>` : ''}
                             <h3 class="es-product-title">${escHtml(product.name)}</h3>
                             <span class="es-product-rating">
-                                <i class="fa-solid fa-star"></i> ${escHtml(product.rating || '—')}
+                                <i class="fa-solid fa-star"></i> ${escHtml(product.rating || '-')}
                             </span>
                             <div class="es-product-price-row">
                                 <div>
@@ -176,7 +176,8 @@
         const prod = cachedFavorites.find(p => p.name === name);
         if (!prod) return;
         localStorage.setItem('selectedProduct', JSON.stringify(prod));
-        window.location.href = 'single-product.html';
+        const slug = window.slugifyProductName ? window.slugifyProductName(prod.name) : '';
+        window.location.href = slug ? `single-product.html?p=${slug}` : 'single-product.html';
     }
 
     document.addEventListener('DOMContentLoaded', renderFavorites);

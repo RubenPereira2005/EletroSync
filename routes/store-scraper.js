@@ -1,10 +1,10 @@
 /**
- * store-scraper.js — descobre o URL direto do produto numa loja específica.
+ * store-scraper.js - descobre o URL direto do produto numa loja específica.
  *
  * Em vez de fazer scraping do HTML (que não funciona para lojas SPA como
  * Worten/Rádio Popular), usamos o Google via Serper com queries do tipo
  *   `site:worten.pt iphone 15`
- * que devolvem URLs orgânicos indexados pelo Google — sempre válidos.
+ * que devolvem URLs orgânicos indexados pelo Google - sempre válidos.
  *
  * Cada loja tem um padrão de URL que identifica páginas de produto reais
  * (vs páginas de categoria, blog, etc.) para filtrar resultados.
@@ -17,8 +17,8 @@ const SERPER_API_KEY = process.env.SERPER_API_KEY;
 const SERPER_SEARCH_URL = 'https://google.serper.dev/search';
 
 // Cache persistente em disco com TTL adaptativo:
-//   - URLs (chave sem prefixo): 7 dias — raramente mudam
-//   - "price::" prefixo: 2 horas — preços mudam mais frequentemente
+//   - URLs (chave sem prefixo): 7 dias - raramente mudam
+//   - "price::" prefixo: 2 horas - preços mudam mais frequentemente
 const CACHE_DIR = path.join(__dirname, '..', 'cache');
 const CACHE_FILE = path.join(CACHE_DIR, 'store-urls.json');
 const TTL_URLS  = 7 * 24 * 60 * 60 * 1000; // 7 dias

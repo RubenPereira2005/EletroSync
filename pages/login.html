@@ -92,23 +92,52 @@
             <form id="login-form">
                 <div class="mb-3">
                     <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" required placeholder="exemplo@email.com">
+                    <input type="email" class="form-control" id="email" name="email" required
+                           maxlength="254" autocomplete="email" inputmode="email"
+                           placeholder="exemplo@email.com">
                 </div>
 
                 <div class="mb-3">
                     <label for="password" class="form-label">Palavra-passe</label>
-                    <input type="password" class="form-control" id="password" required placeholder="A tua palavra-passe">
+                    <input type="password" class="form-control" id="password" name="password" required
+                           minlength="1" maxlength="72" autocomplete="current-password"
+                           placeholder="A tua palavra-passe">
                 </div>
 
-                <div class="mb-4 form-check d-flex align-items-center gap-2 ps-0">
-                    <input type="checkbox" class="form-check-input m-0" id="remember-me">
-                    <label class="form-check-label text-muted m-0 small" for="remember-me">Manter-me ligado</label>
+                <div class="mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="form-check d-flex align-items-center gap-2 ps-0 m-0">
+                        <input type="checkbox" class="form-check-input m-0" id="remember-me">
+                        <label class="form-check-label text-muted m-0 small" for="remember-me">Manter-me ligado</label>
+                    </div>
+                    <a href="#" id="forgot-password-link" class="small text-decoration-none">Esqueceste-te?</a>
                 </div>
 
                 <button type="submit" class="es-btn es-btn-primary es-btn-lg w-100" id="login-btn">
                     Entrar na Conta
                 </button>
             </form>
+
+            <!-- Bloco de recuperação de password (escondido por defeito) -->
+            <div id="forgot-password-section" class="d-none mt-4 pt-3 border-top">
+                <h2 class="h6 mb-2">Recuperar palavra-passe</h2>
+                <p class="text-muted small mb-3">Vamos enviar-te um link para definires uma nova palavra-passe.</p>
+                <form id="forgot-password-form" novalidate>
+                    <div class="mb-3">
+                        <label for="forgot-email" class="form-label small">Email da conta</label>
+                        <input type="email" class="form-control" id="forgot-email" name="email" required
+                               maxlength="254" autocomplete="email" inputmode="email"
+                               placeholder="exemplo@email.com">
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="es-btn es-btn-primary flex-grow-1" id="forgot-submit-btn">
+                            Enviar link de recuperação
+                        </button>
+                        <button type="button" class="es-btn es-btn-ghost" id="forgot-cancel-btn">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
 
             <p class="auth-footer">
                 Ainda não tens conta? <a href="register.html">Regista-te aqui</a>
@@ -118,6 +147,66 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/ui-layout.js"></script>
 <script src="js/auth.js"></script>
+<script>
+// Fluxo de recuperação de password (toggle do bloco + submit)
+(function () {
+    const link        = document.getElementById('forgot-password-link');
+    const section     = document.getElementById('forgot-password-section');
+    const loginForm   = document.getElementById('login-form');
+    const cancelBtn   = document.getElementById('forgot-cancel-btn');
+    const forgotForm  = document.getElementById('forgot-password-form');
+    const forgotEmail = document.getElementById('forgot-email');
+    const submitBtn   = document.getElementById('forgot-submit-btn');
+    if (!link || !section) return;
+
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        section.classList.remove('d-none');
+        // Pré-preencher com o email já escrito em cima (UX)
+        const emailInput = document.getElementById('email');
+        if (emailInput && emailInput.value && forgotEmail && !forgotEmail.value) {
+            forgotEmail.value = emailInput.value;
+        }
+        forgotEmail?.focus();
+    });
+
+    cancelBtn?.addEventListener('click', () => {
+        section.classList.add('d-none');
+    });
+
+    forgotForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = (forgotEmail?.value || '').trim();
+        if (!email) { forgotEmail?.focus(); return; }
+
+        submitBtn.disabled = true;
+        const original = submitBtn.innerHTML;
+        submitBtn.innerHTML = 'A enviar…';
+
+        try {
+            const res = await (window.fetchWithTimeout || fetch)('/api/auth/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            }, 10000);
+            const data = await res.json().catch(() => ({}));
+            if (window.Toast) {
+                if (res.ok) window.Toast.success(data.message || 'Email enviado se a conta existir.');
+                else        window.Toast.error(data.error || 'Não foi possível enviar o email.');
+            } else {
+                alert(data.message || data.error || 'Pedido enviado.');
+            }
+            if (res.ok) section.classList.add('d-none');
+        } catch (err) {
+            if (window.Toast) window.Toast.error('Erro de conexão. Tenta novamente.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = original;
+        }
+    });
+})();
+</script>
 </body>
 </html>

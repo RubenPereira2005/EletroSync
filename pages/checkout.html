@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <title>EletroSync • Finalizar Compra</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="css/design-system.css">
+
+    <style>
+        .checkout-card {
+            background: var(--es-white);
+            border: 1px solid var(--es-gray-200);
+            border-radius: var(--es-radius-lg);
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        .checkout-card h3 {
+            font-size: 1.0625rem;
+            margin: 0 0 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .checkout-card h3 i { color: var(--es-primary); }
+
+        .checkout-summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--es-gray-100);
+        }
+        .checkout-summary-item:last-child { border-bottom: 0; }
+        .checkout-summary-name { font-size: 0.875rem; flex: 1; }
+        .checkout-summary-qty { color: var(--es-text-muted); font-size: 0.75rem; }
+        .checkout-summary-price { font-weight: 700; }
+
+        .checkout-totals {
+            border-top: 2px solid var(--es-gray-200);
+            margin-top: 12px;
+            padding-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.125rem;
+        }
+        .checkout-totals strong { color: var(--es-primary); }
+
+        .form-control:focus {
+            border-color: var(--es-primary);
+            box-shadow: var(--es-shadow-focus);
+        }
+
+        .demo-banner {
+            background: #fff7d6;
+            border: 1px solid #f1d27a;
+            border-radius: var(--es-radius-md);
+            padding: 12px 16px;
+            font-size: 0.875rem;
+            color: #6b4f00;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .checkout-card { padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="es-header-slot"></div>
+
+<main class="es-section-sm">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="es-breadcrumb" style="margin-bottom: 16px;">
+            <ol style="list-style:none;display:flex;gap:6px;padding:0;margin:0;font-size:.875rem;color:var(--es-text-muted);">
+                <li><a href="index.html" style="color:inherit;text-decoration:none;">Início</a></li>
+                <li>›</li>
+                <li aria-current="page" style="color:var(--es-text);font-weight:500;">Finalizar Compra</li>
+            </ol>
+        </nav>
+
+        <h1 style="margin-bottom: 24px;">Finalizar Compra</h1>
+
+        <div class="demo-banner">
+            <i class="fa-solid fa-circle-info"></i>
+            <strong>Modo demonstração:</strong> Esta é uma simulação de checkout - não é cobrado nenhum valor real.
+        </div>
+
+        <!-- Estado: carrinho vazio -->
+        <div id="checkoutEmpty" class="checkout-card text-center py-5 d-none">
+            <i class="fa-solid fa-cart-shopping text-muted mb-3" style="font-size: 2.5rem;"></i>
+            <h3 class="text-muted mb-2">O teu carrinho está vazio</h3>
+            <p class="text-muted mb-3">Adiciona produtos antes de finalizar a compra.</p>
+            <a href="product.html" class="es-btn es-btn-primary">Explorar Produtos</a>
+        </div>
+
+        <!-- Estado: não autenticado -->
+        <div id="checkoutLoginRequired" class="checkout-card text-center py-5 d-none">
+            <i class="fa-solid fa-lock text-muted mb-3" style="font-size: 2.5rem;"></i>
+            <h3 class="text-muted mb-2">Precisas de iniciar sessão</h3>
+            <p class="text-muted mb-3">Para finalizar a compra precisas de ter uma conta.</p>
+            <a href="login.html" class="es-btn es-btn-primary">Iniciar sessão</a>
+        </div>
+
+        <div id="checkoutContent" class="row g-4 d-none">
+            <!-- Coluna esquerda: forms -->
+            <div class="col-lg-7">
+                <form id="checkoutForm" novalidate>
+                    <div class="checkout-card">
+                        <h3><i class="fa-solid fa-truck"></i> Dados de envio</h3>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="shipFullName" class="form-label">Nome completo</label>
+                                <input type="text" class="form-control" id="shipFullName" name="full_name" required minlength="2" maxlength="80" autocomplete="name">
+                            </div>
+                            <div class="col-12">
+                                <label for="shipAddress" class="form-label">Morada</label>
+                                <input type="text" class="form-control" id="shipAddress" name="address" required minlength="4" maxlength="200" autocomplete="street-address">
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="shipCity" class="form-label">Cidade</label>
+                                <input type="text" class="form-control" id="shipCity" name="city" required minlength="2" maxlength="80" autocomplete="address-level2">
+                            </div>
+                            <div class="col-sm-3">
+                                <label for="shipPostalCode" class="form-label">Código postal</label>
+                                <input type="text" class="form-control" id="shipPostalCode" name="postal_code" required pattern="\d{4}-\d{3}" placeholder="1000-001" autocomplete="postal-code">
+                            </div>
+                            <div class="col-sm-3">
+                                <label for="shipCountry" class="form-label">País</label>
+                                <input type="text" class="form-control" id="shipCountry" name="country" value="Portugal" maxlength="80" autocomplete="country-name">
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="shipPhone" class="form-label">Telefone</label>
+                                <input type="tel" class="form-control" id="shipPhone" name="phone" maxlength="30" autocomplete="tel" placeholder="opcional">
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="shipEmail" class="form-label">Email de contacto</label>
+                                <input type="email" class="form-control" id="shipEmail" name="email" maxlength="254" autocomplete="email" placeholder="opcional">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="checkout-card">
+                        <h3><i class="fa-solid fa-credit-card"></i> Pagamento (simulado)</h3>
+                        <p class="text-muted small mb-3">Nenhum dado de cartão é validado ou guardado - é só para a demonstração.</p>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="cardNumber" class="form-label">Número do cartão</label>
+                                <input type="text" class="form-control" id="cardNumber" placeholder="4242 4242 4242 4242" maxlength="19" inputmode="numeric" autocomplete="cc-number">
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="cardName" class="form-label">Nome no cartão</label>
+                                <input type="text" class="form-control" id="cardName" maxlength="80" autocomplete="cc-name">
+                            </div>
+                            <div class="col-sm-3">
+                                <label for="cardExp" class="form-label">Validade</label>
+                                <input type="text" class="form-control" id="cardExp" placeholder="MM/AA" maxlength="5" autocomplete="cc-exp">
+                            </div>
+                            <div class="col-sm-3">
+                                <label for="cardCvc" class="form-label">CVC</label>
+                                <input type="text" class="form-control" id="cardCvc" placeholder="123" maxlength="4" inputmode="numeric" autocomplete="cc-csc">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="es-btn es-btn-primary es-btn-lg w-100" id="placeOrderBtn">
+                        <i class="fa-solid fa-circle-check"></i> Confirmar pedido
+                    </button>
+                </form>
+            </div>
+
+            <!-- Coluna direita: resumo -->
+            <div class="col-lg-5">
+                <div class="checkout-card" style="position: sticky; top: 120px;">
+                    <h3><i class="fa-solid fa-receipt"></i> Resumo</h3>
+                    <div id="checkoutItems"></div>
+                    <div class="checkout-totals">
+                        <span>Total</span>
+                        <strong id="checkoutTotal">0.00€</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div id="es-footer-slot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/ui-layout.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/cart.js"></script>
+<script>
+(function () {
+    function getToken() {
+        const raw = sessionStorage.getItem('eletrosync_session') || localStorage.getItem('eletrosync_session');
+        if (!raw) return null;
+        try {
+            const parsed = JSON.parse(raw);
+            const data = parsed.data || parsed;
+            return data?.session?.access_token || null;
+        } catch { return null; }
+    }
+    function isLoggedIn() { return !!getToken(); }
+    function escapeHtml(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function fmt(v) { return Number(v).toFixed(2) + '€'; }
+    function getUnitPrice(item) {
+        if (typeof item.price === 'number') return item.price;
+        if (typeof item.minPrice === 'number') return item.minPrice;
+        if (Array.isArray(item.shops)) {
+            const prices = item.shops.map(s => parseFloat(s.price)).filter(n => !isNaN(n));
+            if (prices.length) return Math.min(...prices);
+        }
+        return 0;
+    }
+    function getBestStore(item) {
+        if (!Array.isArray(item.shops) || item.shops.length === 0) return null;
+        const sorted = item.shops.slice().sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+        return sorted[0]?.name || null;
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const emptyEl   = document.getElementById('checkoutEmpty');
+        const loginEl   = document.getElementById('checkoutLoginRequired');
+        const contentEl = document.getElementById('checkoutContent');
+
+        if (!isLoggedIn()) {
+            loginEl.classList.remove('d-none');
+            return;
+        }
+
+        // Carregar items do carrinho
+        let items = [];
+        try {
+            const res = await (window.fetchWithTimeout || fetch)('/api/cart', {
+                headers: { Authorization: 'Bearer ' + getToken() }
+            }, 10000);
+            if (res.ok) {
+                const data = await res.json();
+                items = data.items || [];
+            }
+        } catch {}
+
+        if (items.length === 0) {
+            emptyEl.classList.remove('d-none');
+            return;
+        }
+
+        // Renderizar resumo
+        const itemsEl = document.getElementById('checkoutItems');
+        const totalEl = document.getElementById('checkoutTotal');
+
+        let total = 0;
+        itemsEl.innerHTML = items.map(it => {
+            const unit = getUnitPrice(it);
+            const qty = it.quantity || 1;
+            const subtotal = unit * qty;
+            total += subtotal;
+            return `
+                <div class="checkout-summary-item">
+                    <div class="flex-grow-1">
+                        <div class="checkout-summary-name">${escapeHtml(it.name)}</div>
+                        <div class="checkout-summary-qty">${qty} × ${fmt(unit)}</div>
+                    </div>
+                    <div class="checkout-summary-price">${fmt(subtotal)}</div>
+                </div>
+            `;
+        }).join('');
+        totalEl.textContent = fmt(total);
+
+        contentEl.classList.remove('d-none');
+
+        // Pré-preencher email com o do user (se vier do session)
+        try {
+            const raw = sessionStorage.getItem('eletrosync_session') || localStorage.getItem('eletrosync_session');
+            const parsed = JSON.parse(raw);
+            const user = (parsed.data || parsed)?.user;
+            if (user?.email) document.getElementById('shipEmail').value = user.email;
+            if (user?.user_metadata?.full_name) document.getElementById('shipFullName').value = user.user_metadata.full_name;
+        } catch {}
+
+        // Submit do form
+        const form = document.getElementById('checkoutForm');
+        const submitBtn = document.getElementById('placeOrderBtn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            submitBtn.disabled = true;
+            const original = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> A processar…';
+
+            const shipping = {
+                full_name:   document.getElementById('shipFullName').value.trim(),
+                address:     document.getElementById('shipAddress').value.trim(),
+                city:        document.getElementById('shipCity').value.trim(),
+                postal_code: document.getElementById('shipPostalCode').value.trim(),
+                country:     document.getElementById('shipCountry').value.trim() || 'Portugal',
+                phone:       document.getElementById('shipPhone').value.trim() || null,
+                email:       document.getElementById('shipEmail').value.trim() || null,
+            };
+
+            const orderItems = items.map(it => ({
+                name: it.name,
+                price: getUnitPrice(it),
+                quantity: it.quantity || 1,
+                store: getBestStore(it),
+                image: it.image || null,
+            }));
+
+            try {
+                const res = await (window.fetchWithTimeout || fetch)('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
+                    body: JSON.stringify({ items: orderItems, total, shipping }),
+                }, 15000);
+                const data = await res.json().catch(() => ({}));
+
+                if (res.ok) {
+                    if (window.Toast) window.Toast.success('Pedido criado com sucesso.');
+                    setTimeout(() => { window.location.href = 'orders.html?new=' + data.order.id; }, 800);
+                } else {
+                    if (window.Toast) window.Toast.error(data.error || 'Não foi possível criar o pedido.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = original;
+                }
+            } catch {
+                if (window.Toast) window.Toast.error('Erro de conexão.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = original;
+            }
+        });
+    });
+})();
+</script>
+</body>
+</html>

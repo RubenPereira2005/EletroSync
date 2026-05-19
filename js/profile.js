@@ -1,5 +1,5 @@
 /**
- * profile.js — popula a página de perfil com dados reais:
+ * profile.js - popula a página de perfil com dados reais:
  * - Dados pessoais do utilizador (via sessão guardada localmente + Supabase)
  * - Contadores dinâmicos (ex: número de favoritos via API)
  */
@@ -31,22 +31,22 @@
 
     // ── Formatação ──────────────────────────────────────────────────────────
     function formatDate(isoString) {
-        if (!isoString) return '—';
+        if (!isoString) return '-';
         try {
             const d = new Date(isoString);
-            if (isNaN(d.getTime())) return '—';
+            if (isNaN(d.getTime())) return '-';
             return d.toLocaleDateString('pt-PT', {
                 day: '2-digit', month: '2-digit', year: 'numeric',
                 hour: '2-digit', minute: '2-digit'
             });
         } catch {
-            return '—';
+            return '-';
         }
     }
 
     function setText(id, value) {
         const el = document.getElementById(id);
-        if (el) el.textContent = value || '—';
+        if (el) el.textContent = value || '-';
     }
 
     // ── Popular dados pessoais ──────────────────────────────────────────────
@@ -55,7 +55,7 @@
         const user = session?.user;
         if (!user) return;
 
-        const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || '—';
+        const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || '-';
 
         setText('profile-data-name', fullName);
         setText('profile-data-email', user.email);
@@ -81,7 +81,7 @@
             countEl.textContent = (data.favorites || []).length;
         } catch (e) {
             console.error('[profile] contador de favoritos:', e);
-            countEl.textContent = '—';
+            countEl.textContent = '-';
         }
     }
 

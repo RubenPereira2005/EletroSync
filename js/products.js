@@ -110,26 +110,48 @@ async function initFavoritesUI() {
     } catch (e) { console.error(e); }
 }
 
-function renderTo(containerId, list) {
+function emptyStateHtml(opts = {}) {
+    const title = opts.title || 'Sem produtos para mostrar';
+    const sub   = opts.sub   || 'Tenta ajustar os filtros ou volta mais tarde.';
+    const icon  = opts.icon  || 'fa-box-open';
+    const cta   = opts.cta   || '';
+    return `
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fa-solid ${icon} text-muted mb-3" style="font-size: 2.5rem;"></i>
+                <h5 class="text-muted mb-1">${title}</h5>
+                <p class="text-muted small mb-3">${sub}</p>
+                ${cta}
+            </div>
+        </div>
+    `;
+}
+
+function renderTo(containerId, list, emptyOpts) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
+
     if (containerId === 'carousel-novidades') {
         container.innerHTML = list.map(p => `
             <div class="swiper-slide">
                 ${renderProduct(p)}
             </div>
         `).join("");
-        
+
         // Pequeno delay para garantir que o HTML foi renderizado antes do Swiper agir
         setTimeout(() => {
             initSwiper();
             initFavoritesUI();
-        }, 100); 
+        }, 100);
     } else {
         container.className = "row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3 pt-4 pb-5";
-        container.innerHTML = list.map(renderProduct).join("");
-        setTimeout(initFavoritesUI, 50);
+        container.removeAttribute('aria-busy');
+        if (!list || list.length === 0) {
+            container.innerHTML = emptyStateHtml(emptyOpts);
+        } else {
+            container.innerHTML = list.map(renderProduct).join("");
+            setTimeout(initFavoritesUI, 50);
+        }
     }
 }
 
@@ -165,7 +187,11 @@ function renderCategory(categoryKey) {
     return matchCategory && matchPrice;
   });
 
-  renderTo(`grid-${categoryKey}`, filtered);
+  renderTo(`grid-${categoryKey}`, sortProducts(filtered), {
+    icon: 'fa-filter-circle-xmark',
+    title: 'Sem produtos nesta categoria com os filtros atuais',
+    sub: 'Aumenta o intervalo de preço ou desativa filtros para ver mais resultados.',
+  });
 }
 
 function renderSubFilters(categoryKey) {
@@ -238,7 +264,11 @@ function applyAllFilters(forcedSub = undefined) {
         return matchCategory && matchSub && matchPrice && matchPromo && matchEvent && matchStore;
     });
 
-    renderTo(`grid-${categoryTarget}`, filtered);
+    renderTo(`grid-${categoryTarget}`, sortProducts(filtered), {
+        icon: 'fa-filter-circle-xmark',
+        title: 'Nenhum produto bate certo com estes filtros',
+        sub: 'Tenta aumentar o preço máximo, escolher outras lojas ou limpar a subcategoria.',
+    });
 }
 
 function filterBySub(cat, sub, btnElement) {
@@ -247,37 +277,121 @@ function filterBySub(cat, sub, btnElement) {
     buttons.forEach(b => b.classList.remove('active'));
     btnElement.classList.add('active');
 
+    // Atualizar breadcrumb com a subcategoria selecionada
+    updateBreadcrumbAndTitle({ category: cat, sub: sub === 'null' ? null : sub });
+
     // Chama a filtragem mestre passando a subcategoria clicada
     applyAllFilters(sub);
+}
+
+// Ordenação: aplica o sort escolhido ao array de produtos (cópia, não muta)
+function sortProducts(list) {
+    const sel = document.getElementById('sort-select');
+    const mode = sel ? sel.value : 'relevance';
+    if (!mode || mode === 'relevance') return list;
+    const sorted = [...list];
+    switch (mode) {
+        case 'price-asc':
+            sorted.sort((a, b) => parseFloat(a.minPrice || 0) - parseFloat(b.minPrice || 0));
+            break;
+        case 'price-desc':
+            sorted.sort((a, b) => parseFloat(b.minPrice || 0) - parseFloat(a.minPrice || 0));
+            break;
+        case 'name-asc':
+            sorted.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'pt'));
+            break;
+    }
+    return sorted;
 }
 
 // Filtros: reagir a mudanças nos controlos (sem botão "Aplicar")
 document.querySelectorAll('.store-filter').forEach(cb => cb.addEventListener('change', () => applyAllFilters()));
 const priceInput = document.getElementById('filter-price') || document.querySelector('.form-range');
 if (priceInput) priceInput.addEventListener('input', () => applyAllFilters());
+const sortSelect = document.getElementById('sort-select');
+if (sortSelect) sortSelect.addEventListener('change', () => applyAllFilters());
 // Botão "Aplicar" legacy (se existir na página antiga)
 const applyBtn = document.querySelector(".filter-sidebar .btn-primary");
 if (applyBtn) applyBtn.addEventListener("click", () => applyAllFilters());
 
 function showLoadingInGrids() {
-    const loadingHtml = `
-        <div class="products-loading">
-            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">A carregar…</span>
+    // Skeleton card: imagem + título + preço, todos com animação shimmer
+    const skeletonCard = `
+        <div class="col">
+            <div class="product-skeleton" aria-hidden="true">
+                <div class="product-skeleton-img"></div>
+                <div class="product-skeleton-line product-skeleton-line-lg"></div>
+                <div class="product-skeleton-line product-skeleton-line-sm"></div>
+                <div class="product-skeleton-line product-skeleton-line-price"></div>
             </div>
-            <h5 class="text-muted mb-1">A carregar produtos…</h5>
-            <p class="text-muted small mb-0">Estamos a buscar as melhores ofertas nas lojas portuguesas</p>
         </div>
     `;
+    const skeletonHtml = Array.from({ length: 8 }, () => skeletonCard).join('');
+
     document.querySelectorAll('[id^="grid-"]').forEach(el => {
-        el.className = 'products-loading-wrap';
-        el.innerHTML = loadingHtml;
+        el.className = 'row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3 pt-4 pb-5';
+        el.setAttribute('aria-busy', 'true');
+        el.innerHTML = skeletonHtml;
     });
+}
+
+// Labels amigáveis das categorias (chave → texto para humano)
+const CATEGORY_LABELS = {
+    eletrodomesticos: 'Eletrodomésticos',
+    informatica:      'Informática',
+    smartphones:      'Smartphones',
+    gaming:           'Gaming',
+    imagem:           'Imagem e Som',
+    outros:           'Outros',
+};
+
+function updateBreadcrumbAndTitle({ category, sub, query } = {}) {
+    const list  = document.getElementById('breadcrumbList');
+    const title = document.getElementById('pageHeaderTitle');
+    const subEl = document.getElementById('pageHeaderSub');
+    if (!list || !title) return;
+
+    const crumbs = [{ label: 'Início', href: 'index.html' }];
+
+    if (query) {
+        crumbs.push({ label: `Pesquisa: "${query}"` });
+        title.textContent = `Resultados para "${query}"`;
+        if (subEl) subEl.textContent = 'Compara os melhores resultados nas lojas portuguesas.';
+    } else if (category && CATEGORY_LABELS[category]) {
+        crumbs.push({ label: CATEGORY_LABELS[category], href: `product.html?cat=${category}` });
+        if (sub) {
+            crumbs[crumbs.length - 1] = { label: CATEGORY_LABELS[category], href: `product.html?cat=${category}` };
+            crumbs.push({ label: sub });
+            title.textContent = `${CATEGORY_LABELS[category]} · ${sub}`;
+        } else {
+            title.textContent = CATEGORY_LABELS[category];
+        }
+        if (subEl) subEl.textContent = `Compara preços de ${CATEGORY_LABELS[category].toLowerCase()} nas melhores lojas.`;
+    } else {
+        crumbs.push({ label: 'Todos os produtos' });
+        title.textContent = 'Todos os produtos';
+        if (subEl) subEl.textContent = 'Compara preços em tempo real nas melhores lojas portuguesas.';
+    }
+
+    list.innerHTML = crumbs.map((c, i) => {
+        const isLast = i === crumbs.length - 1;
+        const safe = String(c.label).replace(/[<>"]/g, '');
+        if (isLast || !c.href) return `<li aria-current="page">${safe}</li>`;
+        return `<li><a href="${c.href}">${safe}</a></li>`;
+    }).join('');
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
     // 0. CARREGAR PRODUTOS DA API SERPER
     showLoadingInGrids();
+
+    // Breadcrumb inicial conforme parâmetros da URL
+    const initialParams = new URLSearchParams(window.location.search);
+    updateBreadcrumbAndTitle({
+        category: initialParams.get('cat'),
+        sub: initialParams.get('sub'),
+        query: initialParams.get('query'),
+    });
     try {
         const urlParams = new URLSearchParams(window.location.search);
         const searchQuery = urlParams.get('query');
@@ -342,11 +456,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.querySelectorAll('.tab-pane .row').forEach(grid => grid.innerHTML = '');
         
         if (resultados.length > 0) {
-            renderTo("grid-all", resultados);
+            renderTo("grid-all", sortProducts(resultados));
             const title = document.querySelector("#nav-all .section-title");
             if(title) title.innerText = `Resultados para: "${searchQuery}"`;
         } else {
-            document.getElementById("grid-all").innerHTML = `<div class="col-12 text-center py-5"><p>Sem resultados para "${searchQuery}"</p></div>`;
+            const safeQuery = String(searchQuery).replace(/[<>"]/g, '');
+            renderTo("grid-all", [], {
+                icon: 'fa-magnifying-glass',
+                title: `Sem resultados para "${safeQuery}"`,
+                sub: 'Tenta uma pesquisa mais curta ou com termos diferentes. Por exemplo: a marca ou o modelo.',
+                cta: '<a href="product.html" class="es-btn es-btn-secondary">Ver todos os produtos</a>',
+            });
         }
         
         renderSubFilters('all');
@@ -373,7 +493,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } 
     // --- PRIORIDADE 3: CARREGAMENTO NORMAL (PÁGINA INICIAL) ---
     else {
-        renderTo("grid-all", products);
+        renderTo("grid-all", sortProducts(products));
         renderSubFilters('all');
     }
 });
@@ -383,13 +503,16 @@ document.querySelectorAll("#nav-tab .nav-link").forEach(tab => {
   tab.addEventListener("shown.bs.tab", (event) => {
     // Pegar o ID da categoria destino (ex: nav-gaming -> gaming)
     const targetId = event.target.getAttribute('data-bs-target').replace('#nav-', '');
-    
+
+    // 0. Atualizar breadcrumb
+    updateBreadcrumbAndTitle({ category: targetId === 'all' ? null : targetId });
+
     // 1. Limpar e renderizar novos sub-filtros
     renderSubFilters(targetId);
-    
+
     // 2. Renderizar os produtos da categoria
     if (targetId === 'all') {
-        renderTo("grid-all", products);
+        renderTo("grid-all", sortProducts(products));
     } else {
         renderCategory(targetId);
     }
@@ -418,7 +541,8 @@ document.addEventListener('click', function(e) {
     const productData = products.find(p => p.name === productName);
     if (productData) {
         localStorage.setItem('selectedProduct', JSON.stringify(productData));
-        window.location.href = 'single-product.html';
+        const slug = window.slugifyProductName ? window.slugifyProductName(productData.name) : '';
+        window.location.href = slug ? `single-product.html?p=${slug}` : 'single-product.html';
     }
 });
 

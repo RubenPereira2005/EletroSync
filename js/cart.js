@@ -1,5 +1,5 @@
 /**
- * cart.js — gestão do carrinho de compras.
+ * cart.js - gestão do carrinho de compras.
  *
  * Quando o utilizador está autenticado, usa a API Node + Supabase.
  * Quando não está, cai para localStorage (para não perder a UX).
@@ -82,7 +82,7 @@
         if (!res.ok) throw new Error('Falha a limpar carrinho.');
     }
 
-    // Limpa lixo antigo do localStorage (de versões anteriores) — o carrinho só vive no Supabase
+    // Limpa lixo antigo do localStorage (de versões anteriores) - o carrinho só vive no Supabase
     try { localStorage.removeItem(LS_KEY); } catch {}
 
     // ── Preços ──────────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@
         return items.reduce((sum, item) => sum + (item.quantity || 1), 0);
     }
 
-    // ── Operações (apenas com login — sem fallback localStorage) ───────────
+    // ── Operações (apenas com login - sem fallback localStorage) ───────────
     function redirectToLogin() {
         window.location.href = '/login.html';
     }
@@ -131,29 +131,54 @@
     async function addToCart(product, quantity = 1) {
         if (!product || !product.name) return;
         if (!isLoggedIn()) { redirectToLogin(); return; }
-        try { await apiAdd(product, quantity); }
-        catch (e) { console.error('[cart] add:', e); return; }
+        try {
+            await apiAdd(product, quantity);
+            if (window.Toast) window.Toast.success('Adicionado ao carrinho');
+        }
+        catch (e) {
+            console.error('[cart] add:', e);
+            if (window.Toast) window.Toast.error('Não foi possível adicionar ao carrinho');
+            return;
+        }
         await refresh();
     }
 
     async function removeFromCart(name) {
         if (!isLoggedIn()) return;
-        try { await apiRemove(name); }
-        catch (e) { console.error('[cart] remove:', e); return; }
+        try {
+            await apiRemove(name);
+            if (window.Toast) window.Toast.info('Removido do carrinho');
+        }
+        catch (e) {
+            console.error('[cart] remove:', e);
+            if (window.Toast) window.Toast.error('Não foi possível remover do carrinho');
+            return;
+        }
         await refresh();
     }
 
     async function updateQuantity(name, quantity) {
         if (!isLoggedIn()) return;
         try { await apiUpdate(name, quantity); }
-        catch (e) { console.error('[cart] update:', e); return; }
+        catch (e) {
+            console.error('[cart] update:', e);
+            if (window.Toast) window.Toast.error('Não foi possível atualizar quantidade');
+            return;
+        }
         await refresh();
     }
 
     async function clearCart() {
         if (!isLoggedIn()) return;
-        try { await apiClear(); }
-        catch (e) { console.error('[cart] clear:', e); return; }
+        try {
+            await apiClear();
+            if (window.Toast) window.Toast.info('Carrinho limpo');
+        }
+        catch (e) {
+            console.error('[cart] clear:', e);
+            if (window.Toast) window.Toast.error('Não foi possível limpar o carrinho');
+            return;
+        }
         await refresh();
     }
 
@@ -278,6 +303,10 @@
                 </div>
 
                 ${bestStoreHtml}
+
+                <a href="checkout.html" class="es-btn es-btn-primary w-100" style="margin-top: 12px;">
+                    <i class="fa-solid fa-bag-shopping"></i> Finalizar compra
+                </a>
 
                 <button class="cart-clear-btn" data-cart-clear>
                     <i class="fa-solid fa-trash-can"></i> Limpar carrinho

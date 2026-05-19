@@ -1,5 +1,5 @@
 /**
- * favorites.js — API unificada para gestão de favoritos.
+ * favorites.js - API unificada para gestão de favoritos.
  *
  * Apenas funciona com sessão iniciada (dados ficam no Supabase).
  * Sem login, qualquer tentativa de adicionar/remover redireciona para o login.
@@ -60,7 +60,7 @@
         if (!res.ok) throw new Error('Falha a remover favorito.');
     }
 
-    // ── API pública (apenas com login — sem fallback localStorage) ─────────
+    // ── API pública (apenas com login - sem fallback localStorage) ─────────
     function redirectToLogin() {
         window.location.href = '/login.html';
     }
@@ -73,14 +73,26 @@
 
     async function addFavorite(product) {
         if (!isLoggedIn()) { redirectToLogin(); return; }
-        try { await apiAdd(product); }
-        catch (e) { console.error('[favorites] add:', e); }
+        try {
+            await apiAdd(product);
+            if (window.Toast) window.Toast.success('Adicionado aos favoritos');
+        }
+        catch (e) {
+            console.error('[favorites] add:', e);
+            if (window.Toast) window.Toast.error('Não foi possível adicionar aos favoritos');
+        }
     }
 
     async function removeFavorite(productId) {
         if (!isLoggedIn()) return;
-        try { await apiRemove(productId); }
-        catch (e) { console.error('[favorites] remove:', e); }
+        try {
+            await apiRemove(productId);
+            if (window.Toast) window.Toast.info('Removido dos favoritos');
+        }
+        catch (e) {
+            console.error('[favorites] remove:', e);
+            if (window.Toast) window.Toast.error('Não foi possível remover dos favoritos');
+        }
     }
 
     async function isFavorite(productId) {

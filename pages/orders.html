@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <title>EletroSync • Os meus pedidos</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="css/design-system.css">
+
+    <style>
+        .order-card {
+            background: var(--es-white);
+            border: 1px solid var(--es-gray-200);
+            border-radius: var(--es-radius-lg);
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all var(--es-transition);
+        }
+        .order-card:hover {
+            border-color: var(--es-primary);
+            box-shadow: var(--es-shadow-md);
+        }
+        .order-card.is-new {
+            border-color: var(--es-primary);
+            background: var(--es-primary-subtle);
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--es-gray-100);
+        }
+        .order-id {
+            font-family: var(--es-font-mono, monospace);
+            font-size: 0.75rem;
+            color: var(--es-text-muted);
+            letter-spacing: 0.04em;
+        }
+        .order-date { font-weight: 600; font-size: 0.9375rem; }
+        .order-total { font-weight: 800; font-size: 1.125rem; color: var(--es-primary); }
+        .order-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: var(--es-radius-full);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .order-status.completed { background: #d1fae5; color: #065f46; }
+        .order-status.pending   { background: #fef3c7; color: #92400e; }
+        .order-status.cancelled { background: #fee2e2; color: #991b1b; }
+
+        .order-items {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .order-item-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 0.875rem;
+        }
+        .order-item-name { color: var(--es-text); }
+        .order-item-meta { color: var(--es-text-muted); font-size: 0.75rem; }
+        .order-item-price { font-weight: 600; white-space: nowrap; }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="es-header-slot"></div>
+
+<main class="es-section-sm">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="es-breadcrumb" style="margin-bottom: 16px;">
+            <ol style="list-style:none;display:flex;gap:6px;padding:0;margin:0;font-size:.875rem;color:var(--es-text-muted);">
+                <li><a href="index.html" style="color:inherit;text-decoration:none;">Início</a></li>
+                <li>›</li>
+                <li><a href="profile.html" style="color:inherit;text-decoration:none;">Perfil</a></li>
+                <li>›</li>
+                <li aria-current="page" style="color:var(--es-text);font-weight:500;">Pedidos</li>
+            </ol>
+        </nav>
+
+        <h1 style="margin-bottom: 24px;">Os meus pedidos</h1>
+
+        <!-- Loading -->
+        <div id="ordersLoading" class="empty-state">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">A carregar…</span>
+            </div>
+            <p class="text-muted">A carregar pedidos…</p>
+        </div>
+
+        <!-- Não autenticado -->
+        <div id="ordersLoginRequired" class="empty-state d-none">
+            <i class="fa-solid fa-lock text-muted mb-3" style="font-size: 2.5rem;"></i>
+            <h3 class="text-muted mb-2">Inicia sessão para ver os teus pedidos</h3>
+            <a href="login.html" class="es-btn es-btn-primary mt-2">Iniciar sessão</a>
+        </div>
+
+        <!-- Sem pedidos -->
+        <div id="ordersEmpty" class="empty-state d-none">
+            <i class="fa-solid fa-receipt text-muted mb-3" style="font-size: 2.5rem;"></i>
+            <h3 class="text-muted mb-2">Ainda não fizeste pedidos</h3>
+            <p class="text-muted mb-3">Quando finalizares uma compra, ela aparece aqui.</p>
+            <a href="product.html" class="es-btn es-btn-primary">Explorar Produtos</a>
+        </div>
+
+        <!-- Lista -->
+        <div id="ordersList" class="d-none"></div>
+    </div>
+</main>
+
+<div id="es-footer-slot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/ui-layout.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/cart.js"></script>
+<script>
+(function () {
+    function getToken() {
+        const raw = sessionStorage.getItem('eletrosync_session') || localStorage.getItem('eletrosync_session');
+        if (!raw) return null;
+        try {
+            const parsed = JSON.parse(raw);
+            const data = parsed.data || parsed;
+            return data?.session?.access_token || null;
+        } catch { return null; }
+    }
+    function escapeHtml(s) {
+        return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function fmt(v) { return Number(v).toFixed(2) + '€'; }
+    function formatDate(iso) {
+        try {
+            const d = new Date(iso);
+            return d.toLocaleString('pt-PT', { dateStyle: 'medium', timeStyle: 'short' });
+        } catch { return iso; }
+    }
+    function statusLabel(s) {
+        if (s === 'completed') return 'Concluído';
+        if (s === 'pending')   return 'Pendente';
+        if (s === 'cancelled') return 'Cancelado';
+        return s;
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const loadingEl = document.getElementById('ordersLoading');
+        const loginEl   = document.getElementById('ordersLoginRequired');
+        const emptyEl   = document.getElementById('ordersEmpty');
+        const listEl    = document.getElementById('ordersList');
+
+        const token = getToken();
+        if (!token) {
+            loadingEl.classList.add('d-none');
+            loginEl.classList.remove('d-none');
+            return;
+        }
+
+        let orders = [];
+        try {
+            const res = await (window.fetchWithTimeout || fetch)('/api/orders', {
+                headers: { Authorization: 'Bearer ' + token }
+            }, 10000);
+            if (res.ok) {
+                const data = await res.json();
+                orders = data.orders || [];
+            }
+        } catch {}
+
+        loadingEl.classList.add('d-none');
+
+        if (orders.length === 0) {
+            emptyEl.classList.remove('d-none');
+            return;
+        }
+
+        const newId = new URLSearchParams(window.location.search).get('new');
+
+        listEl.innerHTML = orders.map(o => {
+            const isNew = newId && o.id === newId;
+            const itemsHtml = (o.items || []).map(it => `
+                <div class="order-item-row">
+                    <div>
+                        <div class="order-item-name">${escapeHtml(it.name)}</div>
+                        <div class="order-item-meta">${it.quantity || 1} × ${fmt(it.price)}${it.store ? ' · ' + escapeHtml(it.store) : ''}</div>
+                    </div>
+                    <div class="order-item-price">${fmt((it.price || 0) * (it.quantity || 1))}</div>
+                </div>
+            `).join('');
+
+            const shortId = String(o.id).slice(0, 8);
+
+            return `
+                <article class="order-card ${isNew ? 'is-new' : ''}">
+                    <div class="order-header">
+                        <div>
+                            <div class="order-id">#${shortId}</div>
+                            <div class="order-date">${formatDate(o.created_at)}</div>
+                        </div>
+                        <div class="text-end">
+                            <span class="order-status ${o.status}">
+                                <i class="fa-solid fa-circle-check" style="font-size: 8px;"></i>
+                                ${statusLabel(o.status)}
+                            </span>
+                            <div class="order-total mt-1">${fmt(o.total)}</div>
+                        </div>
+                    </div>
+                    <div class="order-items">${itemsHtml}</div>
+                </article>
+            `;
+        }).join('');
+
+        listEl.classList.remove('d-none');
+
+        // Scroll para o pedido novo, se houver
+        if (newId) {
+            const newCard = listEl.querySelector('.order-card.is-new');
+            if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+})();
+</script>
+</body>
+</html>

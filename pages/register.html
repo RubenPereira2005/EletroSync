@@ -87,17 +87,23 @@
             <form id="register-form">
                 <div class="mb-3">
                     <label for="name" class="form-label">Nome completo</label>
-                    <input type="text" class="form-control" id="name" required placeholder="O teu nome">
+                    <input type="text" class="form-control" id="name" name="name" required
+                           minlength="2" maxlength="80" autocomplete="name"
+                           placeholder="O teu nome">
                 </div>
 
                 <div class="mb-3">
                     <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" required placeholder="exemplo@email.com">
+                    <input type="email" class="form-control" id="email" name="email" required
+                           maxlength="254" autocomplete="email" inputmode="email"
+                           placeholder="exemplo@email.com">
                 </div>
 
                 <div class="mb-3">
                     <label for="password" class="form-label">Palavra-passe</label>
-                    <input type="password" class="form-control" id="password" required placeholder="Cria uma palavra-passe">
+                    <input type="password" class="form-control" id="password" name="password" required
+                           minlength="8" maxlength="72" autocomplete="new-password"
+                           placeholder="Cria uma palavra-passe (mín. 8 caracteres)">
                     <div class="pw-strength-container">
                         <div id="pw-bar" class="pw-strength-bar"></div>
                     </div>
@@ -106,7 +112,9 @@
 
                 <div class="mb-4">
                     <label for="confirm-password" class="form-label">Confirmar palavra-passe</label>
-                    <input type="password" class="form-control" id="confirm-password" required placeholder="Repete a palavra-passe">
+                    <input type="password" class="form-control" id="confirm-password" name="confirm-password" required
+                           minlength="8" maxlength="72" autocomplete="new-password"
+                           placeholder="Repete a palavra-passe">
                     <div class="invalid-feedback">As palavras-passe não coincidem.</div>
                 </div>
 

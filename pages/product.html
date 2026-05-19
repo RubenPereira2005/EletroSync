@@ -25,6 +25,29 @@
         .page-header h1 { margin: 0 0 4px; font-size: 1.75rem; }
         .page-header p { color: var(--es-text-muted); margin: 0; }
 
+        .es-breadcrumb { margin-bottom: 10px; }
+        .es-breadcrumb ol {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            font-size: 0.875rem;
+            color: var(--es-text-muted);
+        }
+        .es-breadcrumb li + li::before {
+            content: "›";
+            margin-right: 6px;
+            color: var(--es-gray-300);
+        }
+        .es-breadcrumb a {
+            color: var(--es-text-muted);
+            text-decoration: none;
+        }
+        .es-breadcrumb a:hover { color: var(--es-text); text-decoration: underline; }
+        .es-breadcrumb li[aria-current="page"] { color: var(--es-text); font-weight: 500; }
+
         /* Filters */
         .filter-sidebar {
             background: var(--es-white);
@@ -259,8 +282,14 @@
 
 <div class="page-header">
     <div class="container">
-        <h1>Todos os produtos</h1>
-        <p>Compara preços em tempo real nas melhores lojas portuguesas</p>
+        <nav aria-label="breadcrumb" class="es-breadcrumb">
+            <ol id="breadcrumbList">
+                <li><a href="index.html">Início</a></li>
+                <li id="breadcrumbCurrent" aria-current="page">Todos os produtos</li>
+            </ol>
+        </nav>
+        <h1 id="pageHeaderTitle">Todos os produtos</h1>
+        <p id="pageHeaderSub">Compara preços em tempo real nas melhores lojas portuguesas</p>
     </div>
 </div>
 
@@ -313,15 +342,15 @@
                         </label>
                     </div>
 
-                    <!-- Destaques -->
+                    <!-- Ordenar -->
                     <div class="filter-group">
-                        <div class="filter-group-title">Destaques</div>
-                        <label class="filter-option">
-                            <input type="checkbox"> Em promoção
-                        </label>
-                        <label class="filter-option">
-                            <input type="checkbox"> Entrega grátis
-                        </label>
+                        <div class="filter-group-title">Ordenar por</div>
+                        <select id="sort-select" class="form-select form-select-sm">
+                            <option value="relevance">Relevância</option>
+                            <option value="price-asc">Preço: mais baixo primeiro</option>
+                            <option value="price-desc">Preço: mais alto primeiro</option>
+                            <option value="name-asc">Nome: A-Z</option>
+                        </select>
                     </div>
                 </div>
             </aside>

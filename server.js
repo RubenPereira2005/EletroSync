@@ -29,11 +29,14 @@ app.use('/api/favorites', favoritesRoutes);
 const cartRoutes = require('./routes/cart');
 app.use('/api/cart', cartRoutes);
 
+const ordersRoutes = require('./routes/orders');
+app.use('/api/orders', ordersRoutes);
+
 const productsRoutes = require('./routes/products');
 app.use('/api/products', productsRoutes);
 
 // Endpoint leve para UptimeRobot manter o servidor acordado.
-// Devolve um pequeno JSON com uptime — não consome banda nem créditos Serper.
+// Devolve um pequeno JSON com uptime - não consome banda nem créditos Serper.
 const SERVER_START = Date.now();
 app.get('/api/health', (req, res) => {
   res.json({
@@ -44,7 +47,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// HANDLERS DE ERRO — devem vir DEPOIS das rotas
+// HANDLERS DE ERRO - devem vir DEPOIS das rotas
 // ═══════════════════════════════════════════════════════════════════════════
 
 // 404 para rotas API não encontradas (rotas HTML caem em express.static)

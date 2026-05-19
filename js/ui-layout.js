@@ -1,5 +1,5 @@
 /**
- * ui-layout.js — injeta header e footer unificados em qualquer página que
+ * ui-layout.js - injeta header e footer unificados em qualquer página que
  * tenha um <div id="es-header-slot"></div> e/ou <div id="es-footer-slot"></div>.
  *
  * Executa imediatamente (não espera DOMContentLoaded) para evitar flashes.
@@ -12,6 +12,103 @@ window.fetchWithTimeout = function (url, options = {}, ms = 15000) {
     return fetch(url, { ...options, signal: controller.signal })
         .finally(() => clearTimeout(timer));
 };
+
+// Converte nome de produto em slug URL-friendly. Determinista, para servir como id.
+// Ex: "iPhone 15 Pro Max 256GB" → "iphone-15-pro-max-256gb"
+window.slugifyProductName = function (name) {
+    if (!name) return '';
+    return String(name).toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')   // remove acentos
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 80);
+};
+
+// window.Toast - notificações empilhadas no canto inferior direito.
+// Uso: Toast.success('Adicionado!'), Toast.error('Falhou'), Toast.info('...')
+(function () {
+    const ICONS = {
+        success: 'fa-circle-check',
+        error:   'fa-circle-exclamation',
+        info:    'fa-circle-info',
+    };
+    const COLORS = {
+        success: { bg: '#10b981', fg: '#fff' },
+        error:   { bg: '#ef4444', fg: '#fff' },
+        info:    { bg: '#1f2937', fg: '#fff' },
+    };
+
+    let container = null;
+    function ensureContainer() {
+        if (container && document.body.contains(container)) return container;
+        container = document.createElement('div');
+        container.id = 'es-toast-container';
+        Object.assign(container.style, {
+            position: 'fixed',
+            right: '20px',
+            bottom: '20px',
+            zIndex: '9999',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            pointerEvents: 'none',
+            maxWidth: 'calc(100vw - 40px)',
+        });
+        document.body.appendChild(container);
+        return container;
+    }
+
+    function show(message, type = 'info', durationMs = 3200) {
+        if (!message) return;
+        const wrapper = ensureContainer();
+        const toast = document.createElement('div');
+        const c = COLORS[type] || COLORS.info;
+        const icon = ICONS[type] || ICONS.info;
+        Object.assign(toast.style, {
+            background: c.bg,
+            color: c.fg,
+            padding: '12px 16px',
+            borderRadius: '10px',
+            boxShadow: '0 6px 20px rgba(0,0,0,.18)',
+            fontSize: '14px',
+            fontWeight: '500',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            minWidth: '220px',
+            maxWidth: '360px',
+            opacity: '0',
+            transform: 'translateY(8px)',
+            transition: 'opacity .25s ease, transform .25s ease',
+            pointerEvents: 'auto',
+        });
+        toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+        toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+        toast.innerHTML = `<i class="fa-solid ${icon}" aria-hidden="true"></i><span></span>`;
+        toast.querySelector('span').textContent = String(message);
+        wrapper.appendChild(toast);
+
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+        });
+
+        const remove = () => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(8px)';
+            setTimeout(() => toast.remove(), 250);
+        };
+        toast.addEventListener('click', remove);
+        setTimeout(remove, durationMs);
+    }
+
+    window.Toast = {
+        show,
+        success: (msg, ms) => show(msg, 'success', ms),
+        error:   (msg, ms) => show(msg, 'error', ms),
+        info:    (msg, ms) => show(msg, 'info', ms),
+    };
+})();
 
 (function () {
     'use strict';
@@ -43,6 +140,11 @@ window.fetchWithTimeout = function (url, options = {}, ms = 15000) {
         return `
         <header class="es-header">
             <div class="es-header-inner">
+                <button type="button" class="es-header-burger" id="esHeaderBurger"
+                        aria-label="Abrir menu" aria-expanded="false" aria-controls="esMobileNav">
+                    <span></span><span></span><span></span>
+                </button>
+
                 <a href="index.html" class="es-header-logo">
                     <img src="images/logo3.png" alt="EletroSync">
                 </a>
@@ -83,6 +185,17 @@ window.fetchWithTimeout = function (url, options = {}, ms = 15000) {
                     ${navHtml}
                 </div>
             </nav>
+
+            <div class="es-mobile-nav" id="esMobileNav" aria-hidden="true">
+                <form class="es-mobile-nav-search" action="product.html" method="GET" role="search">
+                    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="currentColor" d="M21.71 20.29L18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.39ZM11 18a7 7 0 1 1 7-7a7 7 0 0 1-7 7Z"/>
+                    </svg>
+                    <input type="text" name="query" placeholder="O que procuras?" aria-label="Pesquisar produtos">
+                </form>
+                ${navHtml}
+            </div>
+            <div class="es-mobile-nav-backdrop" id="esMobileNavBackdrop"></div>
         </header>
 
         <!-- Offcanvas do carrinho (preenchido por cart.js) -->
@@ -172,12 +285,45 @@ window.fetchWithTimeout = function (url, options = {}, ms = 15000) {
         `;
     }
 
+    function wireMobileNav() {
+        const burger   = document.getElementById('esHeaderBurger');
+        const nav      = document.getElementById('esMobileNav');
+        const backdrop = document.getElementById('esMobileNavBackdrop');
+        if (!burger || !nav || !backdrop) return;
+
+        function setOpen(open) {
+            burger.setAttribute('aria-expanded', String(open));
+            nav.setAttribute('aria-hidden', String(!open));
+            document.body.classList.toggle('es-mobile-nav-active', open);
+        }
+
+        burger.addEventListener('click', () => {
+            const isOpen = burger.getAttribute('aria-expanded') === 'true';
+            setOpen(!isOpen);
+        });
+
+        backdrop.addEventListener('click', () => setOpen(false));
+
+        // Fecha o menu ao escolher uma categoria ou ao submeter pesquisa
+        nav.addEventListener('click', (e) => {
+            if (e.target.closest('a')) setOpen(false);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && burger.getAttribute('aria-expanded') === 'true') {
+                setOpen(false);
+                burger.focus();
+            }
+        });
+    }
+
     // Injeção imediata (antes do DOMContentLoaded) quando possível
     function inject() {
         const headerSlot = document.getElementById('es-header-slot');
         const footerSlot = document.getElementById('es-footer-slot');
         if (headerSlot) headerSlot.outerHTML = buildSvgSprite() + buildHeader();
         if (footerSlot) footerSlot.outerHTML = buildFooter();
+        wireMobileNav();
     }
 
     if (document.readyState === 'loading') {

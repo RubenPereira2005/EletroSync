@@ -28,7 +28,7 @@ async function requireAuth(req, res, next) {
     next();
 }
 
-// GET /api/favorites — lista os favoritos do utilizador autenticado
+// GET /api/favorites - lista os favoritos do utilizador autenticado
 router.get('/', requireAuth, async (req, res) => {
     const { data, error } = await req.supabase
         .from('favorites')
@@ -41,12 +41,12 @@ router.get('/', requireAuth, async (req, res) => {
     return res.json({ favorites });
 });
 
-// POST /api/favorites — adiciona um produto aos favoritos
+// POST /api/favorites - adiciona um produto aos favoritos
 router.post('/', requireAuth, async (req, res) => {
     const product = req.body;
 
     if (!product || !product.name) {
-        return res.status(400).json({ error: 'Produto inválido — campo "name" em falta.' });
+        return res.status(400).json({ error: 'Produto inválido, campo "name" em falta.' });
     }
 
     const { error } = await req.supabase
@@ -68,7 +68,7 @@ router.post('/', requireAuth, async (req, res) => {
     return res.json({ message: 'Favorito adicionado.' });
 });
 
-// DELETE /api/favorites/:product_id — remove um favorito
+// DELETE /api/favorites/:product_id - remove um favorito
 router.delete('/:product_id', requireAuth, async (req, res) => {
     const productId = decodeURIComponent(req.params.product_id);
 

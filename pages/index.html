@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Compara preços de eletrodomésticos, informática, smartphones e gaming nas melhores lojas de Portugal — Worten, Fnac, Rádio Popular e PC Diga.">
+    <meta name="description" content="Compara preços de eletrodomésticos, informática, smartphones e gaming nas melhores lojas de Portugal: Worten, Fnac, Rádio Popular e PC Diga.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -157,7 +157,7 @@
                         <i class="fa-solid fa-bolt"></i> Comparador de preços #1 em Portugal
                     </span>
                     <h1 class="es-hero-title">Poupa até <mark>40%</mark> em eletrónica comparando as melhores lojas.</h1>
-                    <p class="es-hero-sub">Encontra o preço mais baixo em eletrodomésticos, informática, smartphones e gaming — tudo num só lugar.</p>
+                    <p class="es-hero-sub">Encontra o preço mais baixo em eletrodomésticos, informática, smartphones e gaming, tudo num só lugar.</p>
 
                     <form class="es-hero-search" action="product.html" method="GET" role="search">
                         <i class="fa-solid fa-magnifying-glass ms-3 text-muted"></i>
@@ -181,7 +181,12 @@
                 </div>
 
                 <div class="col-lg-5 d-none d-lg-block text-center">
-                    <img src="images/pctorre.png" alt="Produtos EletroSync" class="img-fluid" style="max-height: 380px;">
+                    <img id="heroProductImage"
+                         src="images/pctorre.png"
+                         alt="Produto em destaque na EletroSync"
+                         style="width: 100%; height: 340px; object-fit: contain; transition: opacity .4s ease; mix-blend-mode: multiply;"
+                         loading="lazy"
+                         decoding="async">
                 </div>
             </div>
         </div>
@@ -325,5 +330,58 @@
 <script src="js/ui-layout.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/cart.js"></script>
+
+<script>
+// Hero com rotação automática: vai alternando entre fotos reais de produtos
+// populares do catálogo (vindos da Serper). Pré-carrega as imagens para evitar
+// flashes e faz um fade suave entre cada produto.
+(async function () {
+    const hero = document.getElementById('heroProductImage');
+    if (!hero) return;
+
+    const ROTATION_MS = 4000;   // troca a cada 4 segundos
+    const FADE_MS = 350;        // duração do fade
+
+    let products = [];
+
+    // 1ª tentativa: endpoint /hero-images que devolve produtos com PNG (fundo transparente).
+    // Se vier vazio (cache do /all ainda não populada ou sem PNG encontrado),
+    // não há fallback - mantemos a imagem inicial.
+    try {
+        const fetcher = window.fetchWithTimeout || fetch;
+        const res = await fetcher('/api/products/hero-images?count=5', {}, 10000);
+        if (res.ok) {
+            const data = await res.json();
+            products = (data.products || []).filter(p => p && p.image && /^https?:/i.test(p.image));
+        }
+    } catch (e) { /* silencioso - mantém imagem default */ }
+
+    if (products.length === 0) return;
+
+    // Pré-carrega todas as imagens para evitar flashes
+    products.forEach(p => { const img = new Image(); img.src = p.image; });
+
+    let index = 0;
+    function showProduct(p) {
+        hero.style.opacity = '0';
+        setTimeout(() => {
+            hero.src = p.image;
+            hero.alt = p.name;
+            hero.style.opacity = '1';
+        }, FADE_MS);
+    }
+
+    // Mostra o primeiro imediatamente
+    showProduct(products[0]);
+
+    // Roda os restantes
+    if (products.length > 1) {
+        setInterval(() => {
+            index = (index + 1) % products.length;
+            showProduct(products[index]);
+        }, ROTATION_MS);
+    }
+})();
+</script>
 </body>
 </html>

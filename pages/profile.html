@@ -148,6 +148,9 @@
                         <a href="favorites.html"><i class="fa-solid fa-heart"></i> Favoritos <i class="fa-solid fa-chevron-right chevron"></i></a>
                     </li>
                     <li>
+                        <a href="orders.html"><i class="fa-solid fa-receipt"></i> Os meus pedidos <i class="fa-solid fa-chevron-right chevron"></i></a>
+                    </li>
+                    <li>
                         <a href="#" class="disabled-link"><i class="fa-solid fa-bell"></i> Alertas de Preço <span class="soon">Em breve</span></a>
                     </li>
                     <li>
@@ -169,24 +172,38 @@
                     <div class="data-grid">
                         <div class="data-item">
                             <label>Nome</label>
-                            <div class="value" id="profile-data-name">—</div>
+                            <div class="value" id="profile-data-name">-</div>
                         </div>
                         <div class="data-item">
                             <label>Email</label>
-                            <div class="value" id="profile-data-email">—</div>
+                            <div class="value" id="profile-data-email">-</div>
                         </div>
                         <div class="data-item">
                             <label>Conta criada em</label>
-                            <div class="value" id="profile-data-created">—</div>
+                            <div class="value" id="profile-data-created">-</div>
                         </div>
                         <div class="data-item">
                             <label>Último login</label>
-                            <div class="value" id="profile-data-last-login">—</div>
+                            <div class="value" id="profile-data-last-login">-</div>
                         </div>
                     </div>
                     <hr class="es-divider">
-                    <button class="es-btn es-btn-outline" disabled title="Em breve">
-                        <i class="fa-solid fa-pen"></i> Editar dados
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="es-btn es-btn-outline" id="btnEditProfile">
+                            <i class="fa-solid fa-pen"></i> Editar dados
+                        </button>
+                        <button class="es-btn es-btn-outline" id="btnChangePassword">
+                            <i class="fa-solid fa-key"></i> Alterar palavra-passe
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Zona perigosa -->
+                <div class="data-card" style="border-color: var(--es-danger);">
+                    <h3 style="color: var(--es-danger);"><i class="fa-solid fa-triangle-exclamation"></i> Zona perigosa</h3>
+                    <p class="text-muted small mb-3">A eliminação da conta é permanente. Todos os teus favoritos e itens do carrinho são apagados.</p>
+                    <button class="es-btn es-btn-danger" id="btnDeleteAccount">
+                        <i class="fa-solid fa-user-xmark"></i> Eliminar conta
                     </button>
                 </div>
 
@@ -198,7 +215,7 @@
                             <div class="stat-card-icon"><i class="fa-solid fa-heart"></i></div>
                             <div>
                                 <h4>Favoritos</h4>
-                                <div class="stat-value"><span id="profile-favorites-count">—</span> <small style="font-size:.75rem;font-weight:500;color:var(--es-text-muted);">produtos</small></div>
+                                <div class="stat-value"><span id="profile-favorites-count">-</span> <small style="font-size:.75rem;font-weight:500;color:var(--es-text-muted);">produtos</small></div>
                             </div>
                         </a>
                     </div>
@@ -225,10 +242,254 @@
 
 <div id="es-footer-slot"></div>
 
+<!-- Modal: Editar dados -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProfileLabel">Editar dados pessoais</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <form id="editProfileForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editName" class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="editName" name="name" required minlength="2" maxlength="80">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="editEmail" name="email" required maxlength="254">
+                        <div class="form-text">Se mudares o email, vais receber uma confirmação no novo endereço.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="es-btn es-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="es-btn es-btn-primary" id="editProfileSubmit">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Alterar palavra-passe -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changePasswordLabel">Alterar palavra-passe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <form id="changePasswordForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="currentPassword" class="form-label">Palavra-passe atual</label>
+                        <input type="password" class="form-control" id="currentPassword" name="current_password" required minlength="1" maxlength="72" autocomplete="current-password">
+                    </div>
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label">Nova palavra-passe</label>
+                        <input type="password" class="form-control" id="newPassword" name="new_password" required minlength="8" maxlength="72" autocomplete="new-password">
+                    </div>
+                    <div class="mb-3">
+                        <label for="newPasswordConfirm" class="form-label">Confirmar nova palavra-passe</label>
+                        <input type="password" class="form-control" id="newPasswordConfirm" name="confirm" required minlength="8" maxlength="72" autocomplete="new-password">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="es-btn es-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="es-btn es-btn-primary" id="changePasswordSubmit">Alterar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Eliminar conta -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteAccountLabel" style="color: var(--es-danger);">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Eliminar conta
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <form id="deleteAccountForm">
+                <div class="modal-body">
+                    <p class="mb-3">Esta ação é <strong>permanente</strong>. Vamos eliminar a tua conta e todos os teus dados (favoritos, carrinho).</p>
+                    <p class="mb-3">Para confirmar, escreve <code>ELIMINAR</code> abaixo:</p>
+                    <input type="text" class="form-control" id="deleteConfirmInput" autocomplete="off" placeholder="ELIMINAR">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="es-btn es-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="es-btn es-btn-danger" id="deleteAccountSubmit" disabled>Eliminar permanentemente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="js/ui-layout.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/cart.js"></script>
 <script src="js/profile.js"></script>
+<script>
+// Lógica de edição de perfil, alteração de password e eliminação de conta.
+// Depende dos endpoints /api/auth/profile, /api/auth/change-password, /api/auth/account.
+(function () {
+    function getToken() {
+        const raw = sessionStorage.getItem('eletrosync_session') || localStorage.getItem('eletrosync_session');
+        if (!raw) return null;
+        try {
+            const parsed = JSON.parse(raw);
+            const data = parsed.data || parsed;
+            return data?.session?.access_token || null;
+        } catch { return null; }
+    }
+    function clearSession() {
+        sessionStorage.removeItem('eletrosync_session');
+        localStorage.removeItem('eletrosync_session');
+    }
+    async function apiFetch(url, options = {}) {
+        const token = getToken();
+        if (!token) {
+            window.location.href = 'login.html';
+            return null;
+        }
+        const res = await (window.fetchWithTimeout || fetch)(url, {
+            ...options,
+            headers: { 'Content-Type': 'application/json', ...(options.headers || {}), Authorization: 'Bearer ' + token },
+        }, 12000);
+        return res;
+    }
+
+    // ── Editar dados pessoais ──────────────────────────────────────────────
+    const editBtn  = document.getElementById('btnEditProfile');
+    const editForm = document.getElementById('editProfileForm');
+    const editName = document.getElementById('editName');
+    const editEmail = document.getElementById('editEmail');
+    const editModalEl = document.getElementById('editProfileModal');
+
+    editBtn?.addEventListener('click', () => {
+        // Pré-preencher com os valores atuais (lidos do DOM já renderizado por profile.js)
+        editName.value  = document.getElementById('profile-data-name')?.textContent?.trim() || '';
+        editEmail.value = document.getElementById('profile-data-email')?.textContent?.trim() || '';
+        const modal = bootstrap.Modal.getOrCreateInstance(editModalEl);
+        modal.show();
+    });
+
+    editForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submit = document.getElementById('editProfileSubmit');
+        submit.disabled = true;
+        const original = submit.textContent;
+        submit.textContent = 'A guardar…';
+        try {
+            const res = await apiFetch('/api/auth/profile', {
+                method: 'PUT',
+                body: JSON.stringify({ name: editName.value.trim(), email: editEmail.value.trim() }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                if (window.Toast) window.Toast.success(data.message || 'Dados atualizados.');
+                bootstrap.Modal.getOrCreateInstance(editModalEl).hide();
+                setTimeout(() => location.reload(), 800);
+            } else {
+                if (window.Toast) window.Toast.error(data.error || 'Não foi possível atualizar.');
+            }
+        } catch {
+            if (window.Toast) window.Toast.error('Erro de conexão.');
+        } finally {
+            submit.disabled = false;
+            submit.textContent = original;
+        }
+    });
+
+    // ── Alterar palavra-passe ──────────────────────────────────────────────
+    const pwdBtn   = document.getElementById('btnChangePassword');
+    const pwdForm  = document.getElementById('changePasswordForm');
+    const pwdModalEl = document.getElementById('changePasswordModal');
+
+    pwdBtn?.addEventListener('click', () => {
+        pwdForm.reset();
+        bootstrap.Modal.getOrCreateInstance(pwdModalEl).show();
+    });
+
+    pwdForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const cur = document.getElementById('currentPassword').value;
+        const nw  = document.getElementById('newPassword').value;
+        const nc  = document.getElementById('newPasswordConfirm').value;
+        if (nw !== nc) {
+            if (window.Toast) window.Toast.error('As palavras-passe novas não coincidem.');
+            return;
+        }
+        const submit = document.getElementById('changePasswordSubmit');
+        submit.disabled = true;
+        const original = submit.textContent;
+        submit.textContent = 'A alterar…';
+        try {
+            const res = await apiFetch('/api/auth/change-password', {
+                method: 'POST',
+                body: JSON.stringify({ current_password: cur, new_password: nw }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                if (window.Toast) window.Toast.success(data.message || 'Palavra-passe alterada.');
+                bootstrap.Modal.getOrCreateInstance(pwdModalEl).hide();
+            } else {
+                if (window.Toast) window.Toast.error(data.error || 'Não foi possível alterar.');
+            }
+        } catch {
+            if (window.Toast) window.Toast.error('Erro de conexão.');
+        } finally {
+            submit.disabled = false;
+            submit.textContent = original;
+        }
+    });
+
+    // ── Eliminar conta ─────────────────────────────────────────────────────
+    const delBtn      = document.getElementById('btnDeleteAccount');
+    const delForm     = document.getElementById('deleteAccountForm');
+    const delInput    = document.getElementById('deleteConfirmInput');
+    const delSubmit   = document.getElementById('deleteAccountSubmit');
+    const delModalEl  = document.getElementById('deleteAccountModal');
+
+    delBtn?.addEventListener('click', () => {
+        delInput.value = '';
+        delSubmit.disabled = true;
+        bootstrap.Modal.getOrCreateInstance(delModalEl).show();
+    });
+
+    delInput?.addEventListener('input', () => {
+        delSubmit.disabled = delInput.value.trim() !== 'ELIMINAR';
+    });
+
+    delForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (delInput.value.trim() !== 'ELIMINAR') return;
+        delSubmit.disabled = true;
+        const original = delSubmit.textContent;
+        delSubmit.textContent = 'A eliminar…';
+        try {
+            const res = await apiFetch('/api/auth/account', { method: 'DELETE' });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                clearSession();
+                if (window.Toast) window.Toast.info('Conta eliminada. Até breve.');
+                setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+            } else {
+                if (window.Toast) window.Toast.error(data.error || 'Não foi possível eliminar.');
+                delSubmit.disabled = false;
+                delSubmit.textContent = original;
+            }
+        } catch {
+            if (window.Toast) window.Toast.error('Erro de conexão.');
+            delSubmit.disabled = false;
+            delSubmit.textContent = original;
+        }
+    });
+})();
+</script>
 </body>
 </html>

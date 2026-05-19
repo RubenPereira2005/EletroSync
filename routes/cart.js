@@ -28,7 +28,7 @@ async function requireAuth(req, res, next) {
     next();
 }
 
-// GET /api/cart — lista todos os itens do carrinho do utilizador
+// GET /api/cart - lista todos os itens do carrinho do utilizador
 router.get('/', requireAuth, async (req, res) => {
     const { data, error } = await req.supabase
         .from('cart_items')
@@ -41,12 +41,12 @@ router.get('/', requireAuth, async (req, res) => {
     return res.json({ items });
 });
 
-// POST /api/cart — adiciona um produto (ou incrementa quantidade se já existir)
+// POST /api/cart - adiciona um produto (ou incrementa quantidade se já existir)
 router.post('/', requireAuth, async (req, res) => {
     const { product, quantity = 1 } = req.body;
 
     if (!product || !product.name) {
-        return res.status(400).json({ error: 'Produto inválido — campo "name" em falta.' });
+        return res.status(400).json({ error: 'Produto inválido, campo "name" em falta.' });
     }
     if (typeof quantity !== 'number' || !Number.isFinite(quantity) || quantity < 1 || quantity > 999) {
         return res.status(400).json({ error: 'Quantidade inválida (deve ser entre 1 e 999).' });
@@ -90,7 +90,7 @@ router.post('/', requireAuth, async (req, res) => {
     return res.json({ message: 'Produto adicionado ao carrinho.' });
 });
 
-// PUT /api/cart/:product_id — atualiza a quantidade de um produto (remove se <= 0)
+// PUT /api/cart/:product_id - atualiza a quantidade de um produto (remove se <= 0)
 router.put('/:product_id', requireAuth, async (req, res) => {
     const productId = decodeURIComponent(req.params.product_id);
     const { quantity } = req.body;
@@ -120,7 +120,7 @@ router.put('/:product_id', requireAuth, async (req, res) => {
     return res.json({ message: 'Quantidade atualizada.' });
 });
 
-// DELETE /api/cart/:product_id — remove um item do carrinho
+// DELETE /api/cart/:product_id - remove um item do carrinho
 router.delete('/:product_id', requireAuth, async (req, res) => {
     const productId = decodeURIComponent(req.params.product_id);
 
@@ -133,7 +133,7 @@ router.delete('/:product_id', requireAuth, async (req, res) => {
     return res.json({ message: 'Produto removido do carrinho.' });
 });
 
-// DELETE /api/cart — limpa o carrinho todo
+// DELETE /api/cart - limpa o carrinho todo
 router.delete('/', requireAuth, async (req, res) => {
     const { error } = await req.supabase
         .from('cart_items')

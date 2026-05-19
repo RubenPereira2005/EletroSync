@@ -1,5 +1,38 @@
+// Tenta resolver o produto a partir do URL (?p=slug) caso o localStorage não tenha
+// um produto correspondente. Permite que partilhar/abrir o link funcione sem ter
+// passado pela grid primeiro.
+async function resolveProduct() {
+    const urlSlug = new URLSearchParams(window.location.search).get('p');
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem('selectedProduct')); } catch {}
+
+    // Match perfeito: localStorage tem produto e o slug bate certo com o URL
+    if (stored && stored.name) {
+        const storedSlug = window.slugifyProductName ? window.slugifyProductName(stored.name) : '';
+        if (!urlSlug || storedSlug === urlSlug) return stored;
+    }
+
+    // URL tem slug mas localStorage está vazio ou desfasado: buscar /all e procurar
+    if (urlSlug) {
+        try {
+            const res = await (window.fetchWithTimeout || fetch)('/api/products/all', {}, 10000);
+            if (res.ok) {
+                const data = await res.json();
+                const slugify = window.slugifyProductName || (s => s);
+                const match = (data.products || []).find(p => slugify(p.name) === urlSlug);
+                if (match) {
+                    localStorage.setItem('selectedProduct', JSON.stringify(match));
+                    return match;
+                }
+            }
+        } catch {}
+    }
+
+    return stored || null;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
-    const data = JSON.parse(localStorage.getItem('selectedProduct'));
+    const data = await resolveProduct();
     if (!data) { window.location.href = 'index.html'; return; }
 
     // ── Metadata ────────────────────────────────────────────────────────────
@@ -90,7 +123,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }).join('');
     }
 
-    // Mostrar loading (NÃO renderizar a oferta original — pode ter preço impreciso
+    // Mostrar loading (NÃO renderizar a oferta original - pode ter preço impreciso
     // da agregação Serper Shopping; esperamos pelas ofertas validadas do /compare)
     const container = document.getElementById('shopsComparison');
     container.innerHTML = `
@@ -103,7 +136,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     `;
 
     // Preço hero em loading
-    document.getElementById('priceBest').textContent = '—';
+    document.getElementById('priceBest').textContent = '-';
     document.getElementById('priceCurrency').style.opacity = '0.4';
     const oldEl = document.getElementById('priceOld');
     const badgeEl = document.getElementById('promoBadge');
@@ -142,14 +175,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                 cartBtnEnable.style.opacity = '';
             }
         } else {
-            // Nenhuma loja confirmou ter este modelo exato — esconder bloco de preço
+            // Nenhuma loja confirmou ter este modelo exato - esconder bloco de preço
             // e mostrar aviso amarelo
             document.getElementById('priceHeroBlock').style.display = 'none';
             document.getElementById('noShopsWarning').style.display = 'block';
             // Esconder a secção de comparação
             const compSection = document.querySelector('.comparison');
             if (compSection) compSection.style.display = 'none';
-            // Desabilitar "Adicionar ao Carrinho" — sem preço fiável
+            // Desabilitar "Adicionar ao Carrinho" - sem preço fiável
             const cartBtn = document.getElementById('addToCartBtn');
             if (cartBtn) {
                 cartBtn.disabled = true;

@@ -1,5 +1,5 @@
 /**
- * product-profile.js — carrega dinamicamente um produto a partir de ?id=
+ * product-profile.js - carrega dinamicamente um produto a partir de ?id=
  */
 
 (function () {
@@ -90,7 +90,7 @@
 
     setText('pp-name', p.name);
     setText('pp-breadcrumb-name', p.name);
-    document.title = `${p.name} — EletroSync`;
+    document.title = `${p.name} - EletroSync`;
 
     const priceEl = document.getElementById('pp-price');
     if (priceEl) {
@@ -127,7 +127,7 @@
         ctx.storeLink.href = data.url;
       }
     } catch (e) {
-      // Silently ignore — the search URL fallback is already set
+      // Silently ignore - the search URL fallback is already set
     }
   }
 

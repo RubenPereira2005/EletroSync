@@ -6,7 +6,7 @@ const router = express.Router();
 const { resolveProductUrl, fetchLivePrice } = require('./store-scraper');
 
 // =============================================================================
-// RATE LIMITING — protege contra abuso e esgotamento de créditos Serper
+// RATE LIMITING - protege contra abuso e esgotamento de créditos Serper
 // =============================================================================
 // Limites por IP. Como a cache cobre a maioria dos requests, estes limites são
 // generosos para utilizadores normais mas bloqueiam scripts maliciosos.
@@ -30,7 +30,7 @@ const lightLimiter = rateLimit({
 // Limit "pesado" para endpoints que podem consumir créditos Serper (/compare, /search, /details)
 const heavyLimiter = rateLimit({
     windowMs: 60 * 1000,       // 1 minuto
-    max: 20,                   // 20 requests/min/IP — suficiente para uso normal
+    max: 20,                   // 20 requests/min/IP - suficiente para uso normal
     standardHeaders: true,
     legacyHeaders: false,
     skip: isInternalCall,
@@ -48,6 +48,7 @@ const adminLimiter = rateLimit({
 
 const SERPER_API_KEY = process.env.SERPER_API_KEY;
 const SERPER_URL = 'https://google.serper.dev/shopping';
+const SERPER_IMAGES_URL = 'https://google.serper.dev/images';
 
 // ==========================================
 // 1. SISTEMA DE CACHE PERSISTENTE EM DISCO
@@ -58,17 +59,19 @@ const SERPER_URL = 'https://google.serper.dev/shopping';
 const CACHE_DIR = path.join(__dirname, '..', 'cache');
 const CACHE_FILE = path.join(CACHE_DIR, 'serper-cache.json');
 // TTLs por tipo de cache:
-//   - /all (catálogo): TTL longo (12h) — produtos não mudam muito
-//   - /compare (preços): TTL curto (2h) — preços mudam mais frequentemente
+//   - /all (catálogo): TTL longo (12h) - produtos não mudam muito
+//   - /compare (preços): TTL curto (2h) - preços mudam mais frequentemente
 //   - /search: TTL médio (4h)
-const CACHE_TTL_DEFAULT = 12 * 60 * 60 * 1000; // 12h
-const CACHE_TTL_COMPARE = 2 * 60 * 60 * 1000;  // 2h para preços
-const CACHE_TTL_SEARCH  = 4 * 60 * 60 * 1000;  // 4h para pesquisas
+const CACHE_TTL_DEFAULT = 12 * 60 * 60 * 1000;     // 12h
+const CACHE_TTL_COMPARE = 2 * 60 * 60 * 1000;      // 2h para preços
+const CACHE_TTL_SEARCH  = 4 * 60 * 60 * 1000;      // 4h para pesquisas
+const CACHE_TTL_HERO_PNG = 7 * 24 * 60 * 60 * 1000; // 7 dias para PNGs do hero
 const SAVE_DEBOUNCE_MS = 3000; // agrupar escritas para reduzir I/O
 
 function getTTL(key) {
-    if (key.startsWith('compare_')) return CACHE_TTL_COMPARE;
-    if (key.startsWith('search_'))  return CACHE_TTL_SEARCH;
+    if (key.startsWith('hero_png_v2::')) return CACHE_TTL_HERO_PNG;
+    if (key.startsWith('compare_'))   return CACHE_TTL_COMPARE;
+    if (key.startsWith('search_'))    return CACHE_TTL_SEARCH;
     return CACHE_TTL_DEFAULT;
 }
 
@@ -92,7 +95,7 @@ try {
         const remaining = Object.keys(cache).length;
         console.log(`[cache] Carregado do disco: ${remaining} entradas (${expired} expiradas removidas)`);
     } else {
-        console.log('[cache] Sem ficheiro de cache no disco — vai criar novo.');
+        console.log('[cache] Sem ficheiro de cache no disco - vai criar novo.');
     }
 } catch (e) {
     console.error('[cache] Erro ao carregar cache do disco:', e.message);
@@ -158,7 +161,7 @@ async function refreshAllProducts(port) {
     const startedAt = new Date().toISOString();
     try {
         console.log(`[auto-refresh] ⏰ A executar refresh agendado às ${startedAt}...`);
-        // Limpa só a cache de produtos/preços (URLs ficam — não mudam quase nunca)
+        // Limpa só a cache de produtos/preços (URLs ficam - não mudam quase nunca)
         let cleared = 0;
         for (const key of Object.keys(cache)) {
             if (key.startsWith('all_') || key.startsWith('search_') || key.startsWith('compare_')) {
@@ -209,7 +212,7 @@ function isStoreAllowed(storeName) {
     return ALLOWED_STORES.some(allowed => nameLower.includes(allowed));
 }
 
-// Lojas com scraper de URL — só estes produtos são fiáveis para comparar/abrir
+// Lojas com scraper de URL - só estes produtos são fiáveis para comparar/abrir
 const VERIFIED_STORES_REGEX = /worten|fnac|radio popular|radiopopular|rádio popular|pc diga|pcdiga/i;
 
 function isStoreVerified(storeName) {
@@ -607,7 +610,7 @@ router.get('/all', lightLimiter, async (req, res) => {
                     .filter(item => isStoreVerified(item.source))
                     // FILTRO CRÍTICO: descartar produtos com títulos demasiado
                     // genéricos (ex: "Asus Portátil", "Frigorífico Bosch") porque
-                    // não permitem comparação fiável entre lojas — cada loja
+                    // não permitem comparação fiável entre lojas - cada loja
                     // devolverá um modelo diferente.
                     .filter(item => isQuerySpecificEnough(item.title || ''))
                     .map(item => {
@@ -652,6 +655,97 @@ router.get('/all', lightLimiter, async (req, res) => {
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
+});
+
+// GET /api/products/hero-images - devolve uma lista curta de produtos com imagens
+// PNG (fundo transparente) para a rotação da hero da homepage.
+// Usa a cache do /all como fonte de produtos e procura no Serper Images uma versão
+// PNG de cada um. Cache forte (7 dias) por produto - estas imagens não mudam.
+router.get('/hero-images', lightLimiter, async (req, res) => {
+    if (!SERPER_API_KEY) return res.status(500).json({ error: 'SERPER_API_KEY não configurada' });
+
+    const count = Math.min(Math.max(parseInt(req.query.count, 10) || 5, 1), 8);
+    const preferred = ['smartphones', 'gaming', 'imagem', 'informatica'];
+
+    // Lista de produtos vem da cache do /all - se ainda não foi populada, devolve vazio
+    // (o front-end faz fallback para mostrar a imagem default).
+    const allData = getCached('all_products');
+    if (!allData || !Array.isArray(allData.products) || allData.products.length === 0) {
+        return res.json({ products: [] });
+    }
+
+    // Produtos que não queremos ver na rotação da hero (imagens fracas/pouco apelativas).
+    // Filtro simples por keyword no nome - case-insensitive.
+    const HERO_BLOCKLIST = ['xbox'];
+
+    // Escolhe até `count` produtos: 1 por categoria preferida, depois preenche com restantes
+    const picked = [];
+    const all = allData.products.filter(p => {
+        if (!p || !p.name) return false;
+        const lower = p.name.toLowerCase();
+        return !HERO_BLOCKLIST.some(kw => lower.includes(kw));
+    });
+    for (const cat of preferred) {
+        if (picked.length >= count) break;
+        const found = all.find(p => p.category === cat && !picked.includes(p));
+        if (found) picked.push(found);
+    }
+    for (const p of all) {
+        if (picked.length >= count) break;
+        if (!picked.includes(p)) picked.push(p);
+    }
+
+    // Para cada produto, procura uma versão PNG via Serper Images (com cache forte)
+    const results = await Promise.all(picked.map(async (p) => {
+        const cacheKey = `hero_png_v2::${normalizeText(p.name)}`;
+        const cached = getCached(cacheKey);
+        if (cached !== null) {
+            // '' significa "já tentámos e não há PNG" - não voltar a chamar Serper
+            return cached === '' ? null : { ...p, image: cached };
+        }
+
+        try {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 8000);
+            const response = await fetch(SERPER_IMAGES_URL, {
+                method: 'POST',
+                headers: { 'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    q: `${p.name} png transparent background`,
+                    gl: 'pt',
+                    hl: 'pt',
+                    num: 10,
+                }),
+                signal: ctrl.signal,
+            }).finally(() => clearTimeout(timer));
+
+            if (!response.ok) {
+                setCache(cacheKey, '');
+                return null;
+            }
+            const data = await response.json();
+            const images = Array.isArray(data.images) ? data.images : [];
+
+            // Preferir URLs com .png no path, mas aceitar a primeira imagem se não houver
+            // .png explícito (muitos CDNs do Google Images não têm extensão na URL,
+            // mesmo quando servem PNG). O front-end aplica mix-blend-mode: multiply,
+            // pelo que fotos com fundo branco também ficam visualmente limpas.
+            const pngImg = images.find(img => img && img.imageUrl && /\.png(\?|#|$)/i.test(img.imageUrl))
+                        || images.find(img => img && img.imageUrl && /^https?:/i.test(img.imageUrl));
+
+            if (pngImg) {
+                setCache(cacheKey, pngImg.imageUrl);
+                return { ...p, image: pngImg.imageUrl };
+            }
+            setCache(cacheKey, '');
+            return null;
+        } catch (e) {
+            return null;
+        }
+    }));
+
+    const valid = results.filter(Boolean);
+    return res.json({ products: valid });
 });
 
 // GET /api/products/refresh - Força refresh manual da cache (limpa tudo).
@@ -705,7 +799,7 @@ router.get('/compare', heavyLimiter, async (req, res) => {
     try {
         console.log(`[compare] A procurar preços para: ${q}`);
 
-        // Recusar queries demasiado genéricas — devolver vazio para o frontend mostrar aviso
+        // Recusar queries demasiado genéricas - devolver vazio para o frontend mostrar aviso
         if (!isQuerySpecificEnough(q)) {
             console.log(`[compare] Query "${q}" muito genérica (sem modelo nem marca). A devolver vazio.`);
             const result = { shops: [] };
