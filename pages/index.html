@@ -358,8 +358,22 @@
 
     if (products.length === 0) return;
 
-    // Pré-carrega todas as imagens para evitar flashes
-    products.forEach(p => { const img = new Image(); img.src = p.image; });
+    // Pré-carrega imagens em paralelo e filtra as que falham (404/403/CORS).
+    // Só fica com produtos cuja imagem carrega de facto.
+    function preload(p) {
+        return new Promise(resolve => {
+            const img = new Image();
+            img.onload  = () => resolve(p);
+            img.onerror = () => resolve(null);
+            img.src = p.image;
+            // Timeout de 6s - se a imagem nem responde, descarta
+            setTimeout(() => resolve(null), 6000);
+        });
+    }
+
+    const validated = (await Promise.all(products.map(preload))).filter(Boolean);
+    if (validated.length === 0) return;
+    products = validated;
 
     let index = 0;
     function showProduct(p) {

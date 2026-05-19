@@ -695,13 +695,35 @@ router.get('/hero-images', lightLimiter, async (req, res) => {
         if (!picked.includes(p)) picked.push(p);
     }
 
-    // Para cada produto, procura uma versão PNG via Serper Images (com cache forte)
+    // Domínios que servem "PNGs transparentes" mas com o padrão de quadradinhos
+    // do fundo de transparência GRAVADO na imagem (preview com watermark visual).
+    // Resultam em imagens feias no hero - são para evitar.
+    const PNG_SOURCE_BLOCKLIST = [
+        'pngtree.com', 'pngwing.com', 'pngegg.com', 'pngfind.com', 'pngitem.com',
+        'kindpng.com', 'pngimg.com', 'freepng.com', 'freepnglogos.com', 'pikbest.com',
+        'vectorstock.com', 'dreamstime.com', 'shutterstock.com', 'stockphoto.com',
+        'pngmart.com', 'transparentpng.com', 'pngarea.com', 'cleanpng.com',
+        'seekpng.com', 'pngall.com', 'stickpng.com', 'pngplay.com',
+    ];
+
+    function isBadPngSource(url) {
+        if (!url) return true;
+        const lower = url.toLowerCase();
+        if (PNG_SOURCE_BLOCKLIST.some(d => lower.includes(d))) return true;
+        // Padrões típicos de URLs de preview/watermark
+        if (/\/(preview|thumb|watermark|sample)[-_/]/i.test(lower)) return true;
+        return false;
+    }
+
+    // Para cada produto, procura uma versão PNG via Serper Images (com cache forte).
+    // Se não houver PNG limpo, faz fallback para a imagem original do Google Shopping.
     const results = await Promise.all(picked.map(async (p) => {
-        const cacheKey = `hero_png_v2::${normalizeText(p.name)}`;
+        const cacheKey = `hero_png_v3::${normalizeText(p.name)}`;
         const cached = getCached(cacheKey);
         if (cached !== null) {
-            // '' significa "já tentámos e não há PNG" - não voltar a chamar Serper
-            return cached === '' ? null : { ...p, image: cached };
+            // '' significa "já tentámos e não há PNG aceitável" - usar imagem original
+            if (cached === '') return p.image ? { ...p } : null;
+            return { ...p, image: cached };
         }
 
         try {
@@ -721,26 +743,27 @@ router.get('/hero-images', lightLimiter, async (req, res) => {
 
             if (!response.ok) {
                 setCache(cacheKey, '');
-                return null;
+                return p.image ? { ...p } : null;
             }
             const data = await response.json();
             const images = Array.isArray(data.images) ? data.images : [];
 
-            // Preferir URLs com .png no path, mas aceitar a primeira imagem se não houver
-            // .png explícito (muitos CDNs do Google Images não têm extensão na URL,
-            // mesmo quando servem PNG). O front-end aplica mix-blend-mode: multiply,
-            // pelo que fotos com fundo branco também ficam visualmente limpas.
-            const pngImg = images.find(img => img && img.imageUrl && /\.png(\?|#|$)/i.test(img.imageUrl))
-                        || images.find(img => img && img.imageUrl && /^https?:/i.test(img.imageUrl));
+            // Filtrar fontes ruins (que servem PNGs com checkerboard de fundo)
+            const acceptable = images.filter(img => img && img.imageUrl && !isBadPngSource(img.imageUrl));
+
+            // Preferir URL com extensão .png explícita; senão a primeira aceitável
+            const pngImg = acceptable.find(img => /\.png(\?|#|$)/i.test(img.imageUrl))
+                        || acceptable[0];
 
             if (pngImg) {
                 setCache(cacheKey, pngImg.imageUrl);
                 return { ...p, image: pngImg.imageUrl };
             }
+            // Nenhum resultado aceitável - guardar '' e usar imagem original
             setCache(cacheKey, '');
-            return null;
+            return p.image ? { ...p } : null;
         } catch (e) {
-            return null;
+            return p.image ? { ...p } : null;
         }
     }));
 
