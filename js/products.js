@@ -287,7 +287,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             endpoint = `/api/products/search?q=${encodeURIComponent(searchQuery)}`;
         }
 
-        const res = await fetch(endpoint);
+        const res = await (window.fetchWithTimeout || fetch)(endpoint);
         const data = await res.json();
         products = data.products || [];
     } catch (err) {

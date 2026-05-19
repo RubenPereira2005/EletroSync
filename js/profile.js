@@ -75,7 +75,7 @@
         }
 
         try {
-            const res = await fetch('/api/favorites', { headers: authHeaders() });
+            const res = await (window.fetchWithTimeout || fetch)('/api/favorites', { headers: authHeaders() });
             if (!res.ok) throw new Error('Falha na API');
             const data = await res.json();
             countEl.textContent = (data.favorites || []).length;

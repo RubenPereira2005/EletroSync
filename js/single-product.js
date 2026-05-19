@@ -120,7 +120,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Buscar preços reais das outras lojas via API (apenas ofertas validadas)
     try {
-        const res = await fetch(`/api/products/compare?q=${encodeURIComponent(data.name)}`);
+        const res = await (window.fetchWithTimeout || fetch)(`/api/products/compare?q=${encodeURIComponent(data.name)}`);
         const compareData = await res.json();
         const validatedShops = compareData.shops || [];
 
@@ -166,7 +166,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Buscar detalhes e especificações (Organic Search)
     try {
-        const descRes = await fetch(`/api/products/details?q=${encodeURIComponent(data.name)}`);
+        const descRes = await (window.fetchWithTimeout || fetch)(`/api/products/details?q=${encodeURIComponent(data.name)}`);
         if (descRes.ok) {
             const detailsData = await descRes.json();
             

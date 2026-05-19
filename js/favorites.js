@@ -37,14 +37,14 @@
 
     // ── Backend ─────────────────────────────────────────────────────────────
     async function apiGet() {
-        const res = await fetch('/api/favorites', { headers: authHeaders() });
+        const res = await (window.fetchWithTimeout || fetch)('/api/favorites', { headers: authHeaders() });
         if (!res.ok) throw new Error('Falha a carregar favoritos.');
         const data = await res.json();
         return data.favorites || [];
     }
 
     async function apiAdd(product) {
-        const res = await fetch('/api/favorites', {
+        const res = await (window.fetchWithTimeout || fetch)('/api/favorites', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...authHeaders() },
             body: JSON.stringify(product)
@@ -53,7 +53,7 @@
     }
 
     async function apiRemove(productId) {
-        const res = await fetch(`/api/favorites/${encodeURIComponent(productId)}`, {
+        const res = await (window.fetchWithTimeout || fetch)(`/api/favorites/${encodeURIComponent(productId)}`, {
             method: 'DELETE',
             headers: authHeaders()
         });

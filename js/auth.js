@@ -1,5 +1,17 @@
 // Este ficheiro gere a autenticação comunicando com a nossa API Node em /api/auth
 
+// fetch com timeout: aborta o request se demorar mais do que `ms` milissegundos.
+// Evita ficar "pendurado" indefinidamente se o servidor estiver lento ou caído.
+async function fetchWithTimeout(url, options = {}, ms = 10000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
 // Funções utilitárias para sessão
 function storeSession(sessionData, rememberMe) {
     const dataToStore = {
@@ -155,7 +167,7 @@ if (registerForm) {
         btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> A registar...';
 
         try {
-            const resp = await fetch('/api/auth/register', {
+            const resp = await fetchWithTimeout('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password, name })
@@ -173,7 +185,11 @@ if (registerForm) {
             }
         } catch (error) {
             console.error("Erro na API de registo:", error);
-            alert("Erro de conexão ao servidor.");
+            if (error.name === 'AbortError') {
+                alert("O servidor demorou demasiado a responder. Tenta de novo.");
+            } else {
+                alert("Erro de conexão ao servidor.");
+            }
         } finally {
             btn.disabled = false;
             btn.innerText = "Registar Gratuitamente";
@@ -189,7 +205,7 @@ if (verifyDoneBtn) {
         verifyDoneBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> A verificar...';
 
         try {
-            const resp = await fetch('/api/auth/login', {
+            const resp = await fetchWithTimeout('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: pendingEmail, password: pendingPassword })
@@ -230,7 +246,7 @@ if (loginForm) {
         const password = document.getElementById('password').value;
 
         try {
-            const resp = await fetch('/api/auth/login', {
+            const resp = await fetchWithTimeout('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
@@ -254,7 +270,11 @@ if (loginForm) {
             }
         } catch (error) {
             console.error("Erro na API de Login:", error);
-            alert("Erro de conexão ao servidor.");
+            if (error.name === 'AbortError') {
+                alert("O servidor demorou demasiado a responder. Tenta de novo.");
+            } else {
+                alert("Erro de conexão ao servidor.");
+            }
         } finally {
             if (btn) {
                 btn.disabled = false;
@@ -267,7 +287,7 @@ if (loginForm) {
 // Lidar com o Logout
 async function handleLogout() {
     try {
-        await fetch('/api/auth/logout', { method: 'POST' });
+        await fetchWithTimeout('/api/auth/logout', { method: 'POST' }, 5000);
     } catch (e) { }
     localStorage.removeItem('eletrosync_session');
     sessionStorage.removeItem('eletrosync_session');

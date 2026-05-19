@@ -48,6 +48,12 @@ router.post('/', requireAuth, async (req, res) => {
     if (!product || !product.name) {
         return res.status(400).json({ error: 'Produto inválido — campo "name" em falta.' });
     }
+    if (typeof quantity !== 'number' || !Number.isFinite(quantity) || quantity < 1 || quantity > 999) {
+        return res.status(400).json({ error: 'Quantidade inválida (deve ser entre 1 e 999).' });
+    }
+    if (typeof product.name !== 'string' || product.name.length > 500) {
+        return res.status(400).json({ error: 'Nome do produto inválido.' });
+    }
 
     // Tenta inserir. Se já existir (unique violation), incrementa a quantidade.
     const { error: insertError } = await req.supabase
@@ -89,8 +95,11 @@ router.put('/:product_id', requireAuth, async (req, res) => {
     const productId = decodeURIComponent(req.params.product_id);
     const { quantity } = req.body;
 
-    if (typeof quantity !== 'number' || isNaN(quantity)) {
+    if (typeof quantity !== 'number' || !Number.isFinite(quantity)) {
         return res.status(400).json({ error: 'Quantidade inválida.' });
+    }
+    if (quantity > 999) {
+        return res.status(400).json({ error: 'Quantidade máxima é 999.' });
     }
 
     if (quantity <= 0) {

@@ -42,14 +42,14 @@
 
     // ── Backend ─────────────────────────────────────────────────────────────
     async function apiGet() {
-        const res = await fetch('/api/cart', { headers: authHeaders() });
+        const res = await (window.fetchWithTimeout || fetch)('/api/cart', { headers: authHeaders() });
         if (!res.ok) throw new Error('Falha a carregar carrinho.');
         const data = await res.json();
         return data.items || [];
     }
 
     async function apiAdd(product, quantity = 1) {
-        const res = await fetch('/api/cart', {
+        const res = await (window.fetchWithTimeout || fetch)('/api/cart', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...authHeaders() },
             body: JSON.stringify({ product, quantity })
@@ -58,7 +58,7 @@
     }
 
     async function apiUpdate(productId, quantity) {
-        const res = await fetch(`/api/cart/${encodeURIComponent(productId)}`, {
+        const res = await (window.fetchWithTimeout || fetch)(`/api/cart/${encodeURIComponent(productId)}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', ...authHeaders() },
             body: JSON.stringify({ quantity })
@@ -67,7 +67,7 @@
     }
 
     async function apiRemove(productId) {
-        const res = await fetch(`/api/cart/${encodeURIComponent(productId)}`, {
+        const res = await (window.fetchWithTimeout || fetch)(`/api/cart/${encodeURIComponent(productId)}`, {
             method: 'DELETE',
             headers: authHeaders()
         });
@@ -75,7 +75,7 @@
     }
 
     async function apiClear() {
-        const res = await fetch('/api/cart', {
+        const res = await (window.fetchWithTimeout || fetch)('/api/cart', {
             method: 'DELETE',
             headers: authHeaders()
         });

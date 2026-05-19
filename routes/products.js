@@ -1,8 +1,50 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const { resolveProductUrl, fetchLivePrice } = require('./store-scraper');
+
+// =============================================================================
+// RATE LIMITING — protege contra abuso e esgotamento de créditos Serper
+// =============================================================================
+// Limites por IP. Como a cache cobre a maioria dos requests, estes limites são
+// generosos para utilizadores normais mas bloqueiam scripts maliciosos.
+
+// Skip rate limit para chamadas internas (auto-refresh chama /all em loopback)
+function isInternalCall(req) {
+    const ip = req.ip || req.socket?.remoteAddress || '';
+    return ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
+}
+
+// Limit "leve" para endpoints que costumam vir da cache (/all, /cache-status)
+const lightLimiter = rateLimit({
+    windowMs: 60 * 1000,       // 1 minuto
+    max: 60,                   // 60 requests/min/IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: isInternalCall,
+    message: { error: 'Demasiados pedidos. Aguarda um minuto e tenta de novo.' },
+});
+
+// Limit "pesado" para endpoints que podem consumir créditos Serper (/compare, /search, /details)
+const heavyLimiter = rateLimit({
+    windowMs: 60 * 1000,       // 1 minuto
+    max: 20,                   // 20 requests/min/IP — suficiente para uso normal
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: isInternalCall,
+    message: { error: 'Demasiados pedidos à API. Aguarda um minuto e tenta de novo.' },
+});
+
+// Limit "muito restrito" para endpoint de refresh manual (só admin deve usar)
+const adminLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,  // 1 hora
+    max: 10,                   // 10 refreshes/hora/IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Refresh manual limitado a 10 vezes por hora.' },
+});
 
 const SERPER_API_KEY = process.env.SERPER_API_KEY;
 const SERPER_URL = 'https://google.serper.dev/shopping';
@@ -499,7 +541,7 @@ function normalizeProduct(item, category) {
 // ==========================================
 
 // GET /api/products/search - Pesquisa direta no Google Shopping
-router.get('/search', async (req, res) => {
+router.get('/search', heavyLimiter, async (req, res) => {
     const { q, cat = 'todos', gl = 'pt', hl = 'pt' } = req.query;
 
     if (!SERPER_API_KEY) return res.status(500).json({ error: 'SERPER_API_KEY não configurada' });
@@ -537,7 +579,7 @@ router.get('/search', async (req, res) => {
 });
 
 // GET /api/products/all - Pega produtos de todas as categorias para preencher a loja inicial
-router.get('/all', async (req, res) => {
+router.get('/all', lightLimiter, async (req, res) => {
     if (!SERPER_API_KEY) return res.status(500).json({ error: 'SERPER_API_KEY não configurada' });
 
     // Tentar ir buscar à Cache!
@@ -615,7 +657,7 @@ router.get('/all', async (req, res) => {
 // GET /api/products/refresh - Força refresh manual da cache (limpa tudo).
 // Útil quando quiseres atualizar preços fora do TTL natural de 12h.
 // Próxima chamada a /all ou /compare vai consumir créditos Serper.
-router.get('/refresh', (req, res) => {
+router.get('/refresh', adminLimiter, (req, res) => {
     const entriesCleared = Object.keys(cache).length;
     clearCache();
     console.log(`[cache] Refresh manual: ${entriesCleared} entradas apagadas.`);
@@ -623,7 +665,7 @@ router.get('/refresh', (req, res) => {
 });
 
 // GET /api/products/cache-status - Diagnóstico: ver quanto está em cache e idade.
-router.get('/cache-status', (req, res) => {
+router.get('/cache-status', lightLimiter, (req, res) => {
     const now = Date.now();
     const entries = Object.entries(cache).map(([key, val]) => {
         const ttl = getTTL(key);
@@ -650,7 +692,7 @@ router.get('/cache-status', (req, res) => {
 // Estratégia: 1 query Serper Shopping específica POR loja (`{produto} {loja}`) com
 // filtro estrito de título (100% dos tokens devem aparecer) para evitar variantes
 // diferentes serem confundidas com o produto correto.
-router.get('/compare', async (req, res) => {
+router.get('/compare', heavyLimiter, async (req, res) => {
     const { q } = req.query;
 
     if (!SERPER_API_KEY) return res.status(500).json({ error: 'SERPER_API_KEY não configurada' });
@@ -761,7 +803,7 @@ router.get('/compare', async (req, res) => {
 });
 
 // GET /api/products/details - Procura descrições e especificações orgânicas
-router.get('/details', async (req, res) => {
+router.get('/details', heavyLimiter, async (req, res) => {
     const { q } = req.query;
     if (!SERPER_API_KEY) return res.status(500).json({ error: 'SERPER_API_KEY em falta' });
     if (!q) return res.status(400).json({ error: 'Falta parâmetro q' });

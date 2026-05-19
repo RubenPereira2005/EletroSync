@@ -5,6 +5,14 @@
  * Executa imediatamente (não espera DOMContentLoaded) para evitar flashes.
  */
 
+// fetchWithTimeout global: aborta requests pendurados após `ms` (default 15s)
+window.fetchWithTimeout = function (url, options = {}, ms = 15000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    return fetch(url, { ...options, signal: controller.signal })
+        .finally(() => clearTimeout(timer));
+};
+
 (function () {
     'use strict';
 
