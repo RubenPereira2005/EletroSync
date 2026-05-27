@@ -1136,7 +1136,14 @@ body.es-mobile-nav-active {
 }
 
 .es-pwd-toggle-wrap > input {
-    padding-right: 44px !important;
+    padding-right: 48px !important;
+}
+
+/* Esconder os ícones inline do Bootstrap em validation (is-valid/is-invalid)
+   para não sobreporem com o botão do olho. Mantemos a cor da borda. */
+.es-pwd-toggle-wrap > input.is-invalid,
+.es-pwd-toggle-wrap > input.is-valid {
+    background-image: none !important;
 }
 
 .es-pwd-toggle-btn {

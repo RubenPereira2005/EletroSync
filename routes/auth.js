@@ -9,21 +9,29 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANO
 
 router.post('/register', async (req, res) => {
     const { email, password, name } = req.body;
-    
+
     if (!email || !password || !name) {
         return res.status(400).json({ error: 'Faltam campos obrigatórios.' });
     }
 
+    // Para onde o user é redirecionado depois de clicar no link de confirmação.
+    // Override via env EMAIL_CONFIRM_REDIRECT - útil para diferentes ambientes.
+    const emailRedirectTo = process.env.EMAIL_CONFIRM_REDIRECT
+        || `${req.protocol}://${req.get('host')}/login.html`;
+
     const { data, error } = await supabase.auth.signUp({
-        email, 
+        email,
         password,
-        options: { data: { full_name: name } }
+        options: {
+            data: { full_name: name },
+            emailRedirectTo,
+        }
     });
 
     if (error) {
         return res.status(400).json({ error: error.message });
     }
-    
+
     return res.json({ message: 'Registo bem sucedido. Aguardando confirmação no email.', data });
 });
 
