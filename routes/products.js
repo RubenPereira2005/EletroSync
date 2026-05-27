@@ -708,8 +708,6 @@ router.get('/search', heavyLimiter, async (req, res) => {
         const products = (data.shopping || [])
             .filter(item => isStoreVerified(item.source))
             .filter(item => isQuerySpecificEnough(item.title || ''))
-            // Só manter produtos com link verificado em loja parceira
-            .filter(item => isItemConfirmedInPartnerStore(item))
             .map(item => normalizeProduct(item, cat));
 
         const result = { products, total: products.length, query: q };
@@ -755,18 +753,11 @@ async function fetchAllProductsCatalog() {
                     if (!isStoreVerified(item.source)) { stats.droppedSource++; return false; }
                     return true;
                 })
-                // FILTRO CRÍTICO 1: descartar produtos com títulos demasiado genéricos
-                // (ex: "Asus Portátil") - cada loja devolveria um modelo diferente
-                // e a comparação ficaria errada.
+                // Descartar produtos com títulos demasiado genéricos (ex: "Asus
+                // Portátil") - cada loja devolveria um modelo diferente e a
+                // comparação ficaria errada.
                 .filter(item => {
                     if (!isQuerySpecificEnough(item.title || '')) { stats.droppedGeneric++; return false; }
-                    return true;
-                })
-                // FILTRO CRÍTICO 2: só manter produtos cujo link é uma página de
-                // produto REAL numa loja parceira (não pesquisa/categoria/Google).
-                // Garante que o user nunca vê produtos "não confirmados".
-                .filter(item => {
-                    if (!isItemConfirmedInPartnerStore(item)) { stats.droppedUnverified++; return false; }
                     stats.kept++;
                     return true;
                 })
@@ -782,8 +773,8 @@ async function fetchAllProductsCatalog() {
     const results = await Promise.all(fetchPromises);
     results.forEach(items => allProducts.push(...items));
 
-    console.log(`[Serper] Filtros aplicados: ${stats.totalRaw} resultados raw → ${stats.kept} produtos confirmados ` +
-        `(descartados: ${stats.droppedSource} sem loja parceira, ${stats.droppedGeneric} título genérico, ${stats.droppedUnverified} URL não confirmado)`);
+    console.log(`[Serper] Filtros aplicados: ${stats.totalRaw} resultados raw → ${stats.kept} produtos ` +
+        `(descartados: ${stats.droppedSource} sem loja parceira, ${stats.droppedGeneric} título genérico)`);
 
     // Deduplicar por título normalizado
     const seen = new Set();
