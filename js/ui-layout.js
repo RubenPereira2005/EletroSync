@@ -243,9 +243,15 @@ document.addEventListener('submit', function (e) {
     } else {
         init();
     }
-    // Re-attach quando o ui-layout injeta o header dinamicamente
-    setTimeout(init, 100);
-    setTimeout(init, 500);
+
+    // MutationObserver: ataca a qualquer input de pesquisa que apareça depois
+    // (ex: header injetado por ui-layout.js DEPOIS deste IIFE). Substitui os
+    // setTimeouts antigos por uma solução determinista.
+    const mo = new MutationObserver(() => init());
+    mo.observe(document.documentElement, { childList: true, subtree: true });
+
+    // Expor para chamada manual se for preciso
+    window.esInitAutocomplete = init;
 })();
 
 // window.Toast - notificações empilhadas no canto inferior direito.
