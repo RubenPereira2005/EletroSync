@@ -450,6 +450,14 @@
         const newRefresh = res.headers.get('X-New-Refresh-Token');
         if (newAccess && newRefresh) updateLocalTokens(newAccess, newRefresh);
 
+        // Sessão expirada definitivamente (nem refresh válido): limpar e redirect.
+        // 401 só nestas condições - 403/422/500 ficam para o caller tratar.
+        if (res.status === 401) {
+            clearSession();
+            if (window.Toast) window.Toast.error('Sessão expirada. Vais ser redirecionado para o login.');
+            setTimeout(() => { window.location.href = 'login.html?session=expired'; }, 1500);
+        }
+
         return res;
     }
 
