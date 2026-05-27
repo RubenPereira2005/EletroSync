@@ -127,8 +127,8 @@ async function requireAuth(req, res, next) {
     next();
 }
 
-// Cliente admin (service_role) - usado para operações que requerem updateUser
-// (Supabase exige sessão estabelecida, que é impossível com só um Bearer token).
+// Cliente admin (service_role) - usado para operações que NÃO exigem fluxo de
+// confirmação (delete account, change-password depois de verificar a antiga).
 function getAdminClient() {
     const serviceKey = process.env.SUPABASE_SERVICE_KEY;
     if (!serviceKey) return null;
@@ -137,13 +137,29 @@ function getAdminClient() {
     });
 }
 
-// PUT /api/auth/profile - atualiza nome e/ou email do utilizador autenticado.
-// Usa o cliente admin (service_role) porque updateUser via Bearer token simples
-// dá "Auth session missing" (Supabase requer sessão completa).
-router.put('/profile', requireAuth, async (req, res) => {
-    const admin = getAdminClient();
-    if (!admin) return res.status(500).json({ error: 'Funcionalidade não configurada no servidor (SUPABASE_SERVICE_KEY em falta).' });
+// Middleware que estabelece uma sessão completa (access + refresh) num cliente
+// Supabase para chamadas que precisam de contexto de utilizador (updateUser,
+// que dispara email de confirmação quando o email muda). Lê o refresh_token
+// do header X-Refresh-Token.
+async function withUserSession(req, res, next) {
+    const refreshToken = req.headers['x-refresh-token'];
+    if (!refreshToken) return res.status(400).json({ error: 'Refresh token em falta.' });
 
+    req.userClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await req.userClient.auth.setSession({
+        access_token: req.userToken,
+        refresh_token: refreshToken,
+    });
+    if (error) return res.status(401).json({ error: 'Sessão inválida ou expirada.' });
+    next();
+}
+
+// PUT /api/auth/profile - atualiza nome e/ou email do utilizador autenticado.
+// Usa setSession (com refresh_token do user) para que o updateUser dispare email
+// de confirmação quando o email muda (fluxo standard Supabase).
+router.put('/profile', requireAuth, withUserSession, async (req, res) => {
     const { name, email } = req.body || {};
     const updates = {};
 
@@ -152,8 +168,8 @@ router.put('/profile', requireAuth, async (req, res) => {
         if (trimmed.length < 2 || trimmed.length > 80) {
             return res.status(400).json({ error: 'Nome deve ter entre 2 e 80 caracteres.' });
         }
-        // Preservar outras keys de user_metadata se existirem
-        updates.user_metadata = { ...(req.user.user_metadata || {}), full_name: trimmed };
+        // No fluxo user-context, a chave é `data` (e não `user_metadata`).
+        updates.data = { ...(req.user.user_metadata || {}), full_name: trimmed };
     }
 
     let emailChanged = false;
@@ -172,11 +188,13 @@ router.put('/profile', requireAuth, async (req, res) => {
         return res.status(400).json({ error: 'Nada para atualizar.' });
     }
 
-    const { data, error } = await admin.auth.admin.updateUserById(req.user.id, updates);
+    const { data, error } = await req.userClient.auth.updateUser(updates);
     if (error) return res.status(400).json({ error: error.message });
 
     return res.json({
-        message: emailChanged ? 'Dados atualizados. O email foi alterado.' : 'Dados atualizados.',
+        message: emailChanged
+            ? 'Verifica o teu novo email para confirmar a alteração.'
+            : 'Dados atualizados.',
         user: data.user,
     });
 });

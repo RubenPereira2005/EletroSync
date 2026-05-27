@@ -373,6 +373,15 @@
             return data?.session?.access_token || null;
         } catch { return null; }
     }
+    function getRefreshToken() {
+        const raw = sessionStorage.getItem('eletrosync_session') || localStorage.getItem('eletrosync_session');
+        if (!raw) return null;
+        try {
+            const parsed = JSON.parse(raw);
+            const data = parsed.data || parsed;
+            return data?.session?.refresh_token || null;
+        } catch { return null; }
+    }
     function clearSession() {
         sessionStorage.removeItem('eletrosync_session');
         localStorage.removeItem('eletrosync_session');
@@ -400,9 +409,18 @@
             window.location.href = 'login.html';
             return null;
         }
+        const refresh = getRefreshToken();
+        const headers = {
+            'Content-Type': 'application/json',
+            ...(options.headers || {}),
+            Authorization: 'Bearer ' + token,
+        };
+        // X-Refresh-Token é usado pelos endpoints que precisam de setSession completo
+        // (PUT /profile - para disparar email de confirmação quando o email muda).
+        if (refresh) headers['X-Refresh-Token'] = refresh;
         const res = await (window.fetchWithTimeout || fetch)(url, {
             ...options,
-            headers: { 'Content-Type': 'application/json', ...(options.headers || {}), Authorization: 'Bearer ' + token },
+            headers,
         }, 12000);
         return res;
     }
