@@ -12,6 +12,17 @@ async function fetchWithTimeout(url, options = {}, ms = 10000) {
     }
 }
 
+// Helpers para notificações: usa window.Toast (definido em ui-layout.js) com
+// fallback para console caso não esteja disponível ainda.
+function notifyError(msg) {
+    if (window.Toast && typeof window.Toast.error === 'function') window.Toast.error(msg);
+    else console.error('[auth]', msg);
+}
+function notifyInfo(msg) {
+    if (window.Toast && typeof window.Toast.info === 'function') window.Toast.info(msg);
+    else console.info('[auth]', msg);
+}
+
 // Funções utilitárias para sessão
 function storeSession(sessionData, rememberMe) {
     const dataToStore = {
@@ -175,7 +186,7 @@ if (registerForm) {
             const responseData = await resp.json();
 
             if (!resp.ok) {
-                alert("Erro: " + (responseData.error || "Algo falhou"));
+                notifyError(responseData.error || "Não foi possível concluir o registo.");
             } else {
                 // Sucesso no registo
                 pendingEmail = email;
@@ -186,9 +197,9 @@ if (registerForm) {
         } catch (error) {
             console.error("Erro na API de registo:", error);
             if (error.name === 'AbortError') {
-                alert("O servidor demorou demasiado a responder. Tenta de novo.");
+                notifyError("O servidor demorou demasiado a responder. Tenta de novo.");
             } else {
-                alert("Erro de conexão ao servidor.");
+                notifyError("Erro de conexão ao servidor.");
             }
         } finally {
             btn.disabled = false;
@@ -213,7 +224,7 @@ if (verifyDoneBtn) {
             const responseData = await resp.json();
 
             if (!resp.ok) {
-                alert("O email ainda não foi confirmado ou ocorreu um erro.\nSe já clicou no link, aguarde uns segundos e tente de novo.");
+                notifyError("O email ainda não foi confirmado. Se já clicaste no link, aguarda alguns segundos e tenta de novo.");
                 verifyDoneBtn.disabled = false;
                 verifyDoneBtn.innerText = "Já confirmei o email";
             } else {
@@ -255,8 +266,9 @@ if (loginForm) {
 
             if (!resp.ok) {
                 let errorMsg = responseData.error || "Erro ao entrar.";
-                if (errorMsg.includes('Email not confirmed')) errorMsg = "Por favor confirme o seu email antes de entrar!";
-                alert("Erro: " + errorMsg);
+                if (errorMsg.includes('Email not confirmed')) errorMsg = "Confirma o teu email antes de entrar.";
+                else if (errorMsg.includes('Invalid login credentials')) errorMsg = "Email ou palavra-passe incorretos.";
+                notifyError(errorMsg);
             } else {
                 // Logado com sucesso
                 const rememberMeEl = document.getElementById('remember-me');
@@ -271,9 +283,9 @@ if (loginForm) {
         } catch (error) {
             console.error("Erro na API de Login:", error);
             if (error.name === 'AbortError') {
-                alert("O servidor demorou demasiado a responder. Tenta de novo.");
+                notifyError("O servidor demorou demasiado a responder. Tenta de novo.");
             } else {
-                alert("Erro de conexão ao servidor.");
+                notifyError("Erro de conexão ao servidor.");
             }
         } finally {
             if (btn) {
