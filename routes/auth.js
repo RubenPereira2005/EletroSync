@@ -239,17 +239,44 @@ router.delete('/account', requireAuth, async (req, res) => {
     const admin = getAdminClient();
     if (!admin) return res.status(500).json({ error: 'Funcionalidade não configurada no servidor (SUPABASE_SERVICE_KEY em falta).' });
 
-    // Apagar dados do utilizador (cart_items, favorites). As tabelas têm RLS pelo user_id,
-    // mas com service_role passamos por cima. Cascade no SQL é uma alternativa mais limpa.
-    try {
-        await admin.from('cart_items').delete().eq('user_id', req.user.id);
-        await admin.from('favorites').delete().eq('user_id', req.user.id);
-    } catch (e) {
-        console.error('[auth] delete account: erro a limpar dados:', e.message);
+    const userId = req.user.id;
+
+    // 1) Apagar dados de tabelas custom. Ignorar erros de "tabela não existe" (42P01)
+    //    porque tabelas opcionais como orders podem não estar criadas ainda.
+    const tablesToClean = ['cart_items', 'favorites', 'orders'];
+    for (const table of tablesToClean) {
+        try {
+            const { error } = await admin.from(table).delete().eq('user_id', userId);
+            if (error && error.code !== '42P01') {
+                console.error(`[auth] delete account: erro a limpar ${table}:`, error.message, error.code);
+            }
+        } catch (e) {
+            console.error(`[auth] delete account: exceção a limpar ${table}:`, e.message);
+        }
     }
 
-    const { error } = await admin.auth.admin.deleteUser(req.user.id);
-    if (error) return res.status(400).json({ error: error.message });
+    // 2) Eliminar o user do auth. Soft delete (segundo param=true) marca como
+    //    deleted_at sem remover hard - evita erros de FK em tabelas internas
+    //    do Supabase (auth.identities, auth.audit_log_entries, etc).
+    const { error } = await admin.auth.admin.deleteUser(userId);
+    if (error) {
+        console.error('[auth] admin.deleteUser falhou:', {
+            message: error.message,
+            code: error.code,
+            status: error.status,
+            userId,
+        });
+
+        // Tentar soft delete como fallback - útil quando há FKs internas que bloqueiam hard delete
+        const { error: softErr } = await admin.auth.admin.deleteUser(userId, true);
+        if (softErr) {
+            console.error('[auth] soft delete também falhou:', softErr.message);
+            return res.status(500).json({
+                error: 'Não foi possível eliminar a conta. Detalhes: ' + (error.message || 'erro desconhecido'),
+            });
+        }
+        return res.json({ message: 'Conta eliminada.' });
+    }
 
     return res.json({ message: 'Conta eliminada.' });
 });
