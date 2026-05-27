@@ -113,17 +113,50 @@ router.post('/update-password', async (req, res) => {
 // ENDPOINTS DE GESTÃO DE CONTA (requerem token de sessão válido)
 // =============================================================================
 
-// Middleware: valida o Bearer token e expõe req.user.
+// Middleware: valida o Bearer token. Se estiver expirado E houver refresh_token
+// no header X-Refresh-Token, faz auto-refresh e devolve os novos tokens em
+// headers (X-New-Access-Token, X-New-Refresh-Token) para o cliente guardar.
 async function requireAuth(req, res, next) {
     const authHeader = req.headers.authorization || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    if (!token) return res.status(401).json({ error: 'Falta o token de autenticação.' });
+    const accessToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!accessToken) return res.status(401).json({ error: 'Falta o token de autenticação.' });
 
-    const { data, error } = await supabase.auth.getUser(token);
-    if (error || !data?.user) return res.status(401).json({ error: 'Token inválido ou expirado.' });
+    let { data, error } = await supabase.auth.getUser(accessToken);
+
+    if (error || !data?.user) {
+        // Tentar renovar com refresh_token, se vier no header
+        const refreshToken = req.headers['x-refresh-token'];
+        if (!refreshToken) return res.status(401).json({ error: 'Token inválido ou expirado.' });
+
+        const refreshClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+            auth: { persistSession: false, autoRefreshToken: false },
+        });
+        const refreshResult = await refreshClient.auth.refreshSession({ refresh_token: refreshToken });
+        if (refreshResult.error || !refreshResult.data?.session) {
+            return res.status(401).json({ error: 'Sessão expirada. Inicia sessão novamente.' });
+        }
+
+        const newAccess = refreshResult.data.session.access_token;
+        const newRefresh = refreshResult.data.session.refresh_token;
+
+        const reval = await supabase.auth.getUser(newAccess);
+        if (reval.error || !reval.data?.user) {
+            return res.status(401).json({ error: 'Sessão inválida.' });
+        }
+
+        // Expor novos tokens ao cliente via headers para ele atualizar localStorage.
+        // Access-Control-Expose-Headers garante que o JS browser os consegue ler.
+        res.setHeader('X-New-Access-Token', newAccess);
+        res.setHeader('X-New-Refresh-Token', newRefresh);
+        res.setHeader('Access-Control-Expose-Headers', 'X-New-Access-Token, X-New-Refresh-Token');
+
+        req.user = reval.data.user;
+        req.userToken = newAccess;
+        return next();
+    }
 
     req.user = data.user;
-    req.userToken = token;
+    req.userToken = accessToken;
     next();
 }
 
