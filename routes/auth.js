@@ -74,23 +74,32 @@ router.post('/forgot-password', async (req, res) => {
     return res.json({ message: 'Se este email estiver registado, vais receber um link para recuperar a palavra-passe.' });
 });
 
-// POST /api/auth/update-password - usa o token de recuperação para definir nova password.
-// O token vem do link enviado por email (access_token na URL hash da página de reset).
+// POST /api/auth/update-password - usa os tokens de recuperação para definir nova password.
+// Os tokens vêm do link enviado por email (access_token + refresh_token no hash URL).
+// O Supabase requer uma sessão COMPLETA (não só access_token) para updateUser().
 router.post('/update-password', async (req, res) => {
-    const { access_token, password } = req.body || {};
+    const { access_token, refresh_token, password } = req.body || {};
 
     if (!access_token || typeof access_token !== 'string') {
         return res.status(400).json({ error: 'Token de recuperação em falta.' });
+    }
+    if (!refresh_token || typeof refresh_token !== 'string') {
+        return res.status(400).json({ error: 'Refresh token de recuperação em falta.' });
     }
     if (!password || typeof password !== 'string' || password.length < 8 || password.length > 72) {
         return res.status(400).json({ error: 'A palavra-passe deve ter entre 8 e 72 caracteres.' });
     }
 
-    // Cria um cliente Supabase ligado ao token do utilizador para esta operação
     const userClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
-        auth: { persistSession: false },
-        global: { headers: { Authorization: `Bearer ${access_token}` } }
+        auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    // Estabelecer sessão completa (access + refresh). Sem isto, o updateUser falha
+    // com "Auth session missing!" porque o cliente não tem state interno de auth.
+    const { error: sessErr } = await userClient.auth.setSession({ access_token, refresh_token });
+    if (sessErr) {
+        return res.status(400).json({ error: 'Link de recuperação inválido ou expirado.' });
+    }
 
     const { error } = await userClient.auth.updateUser({ password });
     if (error) {
