@@ -377,6 +377,23 @@
         sessionStorage.removeItem('eletrosync_session');
         localStorage.removeItem('eletrosync_session');
     }
+    // Atualiza o objeto `user` dentro da sessão guardada (sem mexer no token).
+    // Necessário depois de editar perfil para a página refletir o novo nome/email.
+    function updateLocalUser(newUser) {
+        if (!newUser) return;
+        const key = 'eletrosync_session';
+        const fromSession = sessionStorage.getItem(key);
+        const raw = fromSession || localStorage.getItem(key);
+        if (!raw) return;
+        try {
+            const parsed = JSON.parse(raw);
+            if (parsed.data) parsed.data.user = newUser;
+            else             parsed.user      = newUser;
+            const serialized = JSON.stringify(parsed);
+            if (fromSession) sessionStorage.setItem(key, serialized);
+            else             localStorage.setItem(key, serialized);
+        } catch {}
+    }
     async function apiFetch(url, options = {}) {
         const token = getToken();
         if (!token) {
@@ -418,6 +435,9 @@
             });
             const data = await res.json().catch(() => ({}));
             if (res.ok) {
+                // Atualizar sessão local com o user novo - sem isto, o reload mostra
+                // os dados antigos (cache no localStorage).
+                if (data.user) updateLocalUser(data.user);
                 if (window.Toast) window.Toast.success(data.message || 'Dados atualizados.');
                 bootstrap.Modal.getOrCreateInstance(editModalEl).hide();
                 setTimeout(() => location.reload(), 800);
