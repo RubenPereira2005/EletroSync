@@ -350,7 +350,29 @@ document.addEventListener('submit', function (e) {
         { href: 'product.html?cat=gaming',           label: 'Gaming',              page: 'product.html', cat: 'gaming' },
     ];
 
+    // Verifica de forma síncrona (sem chamadas à rede) se há sessão guardada.
+    // Não valida o token contra o servidor, mas é suficiente para decidir o href
+    // do ícone do perfil no header (login vs profile).
+    function hasLocalSession() {
+        try {
+            const raw = sessionStorage.getItem('eletrosync_session') || localStorage.getItem('eletrosync_session');
+            if (!raw) return false;
+            const parsed = JSON.parse(raw);
+            const data = parsed.data || parsed;
+            return !!(data && data.session && data.session.access_token);
+        } catch {
+            return false;
+        }
+    }
+
     function buildHeader() {
+        const loggedIn = hasLocalSession();
+        const profileHref = loggedIn ? 'profile.html' : 'login.html';
+        const profileLabel = loggedIn ? 'Perfil' : 'Entrar / Registar';
+        const profileIcon = loggedIn
+            ? '<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.71 12.71a6 6 0 1 0-7.42 0a10 10 0 0 0-6.22 8.18a1 1 0 0 0 2 .22a8 8 0 0 1 15.9 0a1 1 0 0 0 1 .89h.11a1 1 0 0 0 .88-1.1a10 10 0 0 0-6.25-8.19ZM12 12a4 4 0 1 1 4-4a4 4 0 0 1-4 4Z"/></svg>'
+            : '<i class="fa-solid fa-right-to-bracket" style="font-size:1.1rem"></i>';
+
         const navHtml = navLinks.map(l => {
             let isActive = false;
             if (l.cat === null) {
@@ -389,10 +411,8 @@ document.addEventListener('submit', function (e) {
                         </svg>
                     </a>
 
-                    <a href="profile.html" class="es-header-action es-header-profile-link" aria-label="Perfil" title="Perfil">
-                        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-                            <path fill="currentColor" d="M15.71 12.71a6 6 0 1 0-7.42 0a10 10 0 0 0-6.22 8.18a1 1 0 0 0 2 .22a8 8 0 0 1 15.9 0a1 1 0 0 0 1 .89h.11a1 1 0 0 0 .88-1.1a10 10 0 0 0-6.25-8.19ZM12 12a4 4 0 1 1 4-4a4 4 0 0 1-4 4Z"/>
-                        </svg>
+                    <a href="${profileHref}" class="es-header-action es-header-profile-link" aria-label="${profileLabel}" title="${profileLabel}">
+                        ${profileIcon}
                     </a>
 
                     <a href="#" class="es-header-action" data-bs-toggle="offcanvas" data-bs-target="#offcanvasCart" aria-controls="offcanvasCart" aria-label="Carrinho" title="Carrinho">
