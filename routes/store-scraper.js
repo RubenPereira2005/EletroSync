@@ -89,8 +89,10 @@ const STORES = {
     },
     'fnac': {
         site: 'fnac.pt',
-        // Produtos Fnac começam com /aNNNNN (ex: /a11254244)
-        isProductUrl: (url) => /fnac\.pt\/[^/]+\/a\d+/i.test(url) || /fnac\.pt\/a\d+/i.test(url),
+        // Produtos Fnac: slug obrigatório com pelo menos 2 letras antes do /aNNNNN
+        // (ex: /smartphone-apple-iphone-15/a11254244). Sem o slug, /a1, /a99 e
+        // outros URLs curtos eram falsamente aceites como produto.
+        isProductUrl: (url) => /fnac\.pt\/[a-z0-9][a-z0-9-]{2,}\/a\d{4,}/i.test(url),
     },
     'radio popular': {
         site: 'radiopopular.pt',

@@ -68,32 +68,52 @@ const CACHE_TTL_SEARCH  = 4 * 60 * 60 * 1000;      // 4h para pesquisas
 const CACHE_TTL_HERO_PNG = 7 * 24 * 60 * 60 * 1000; // 7 dias para PNGs do hero
 const SAVE_DEBOUNCE_MS = 3000; // agrupar escritas para reduzir I/O
 
+// Prefixos versionados. Incrementar a versão invalida entradas antigas em massa
+// (útil quando o algoritmo de normalização ou estrutura de dados muda).
+const CACHE_KEY = {
+    all:      'all_products',
+    search:   (q, gl) => `search_${q}_${gl}`,
+    compare:  (q) => `compare_v2_${q}`,
+    heroPng:  (name) => `hero_png_v3::${name}`,
+};
+
 function getTTL(key) {
-    if (key.startsWith('hero_png_v2::')) return CACHE_TTL_HERO_PNG;
-    if (key.startsWith('compare_'))   return CACHE_TTL_COMPARE;
-    if (key.startsWith('search_'))    return CACHE_TTL_SEARCH;
+    if (key.startsWith('hero_png_v3::')) return CACHE_TTL_HERO_PNG;
+    if (key.startsWith('compare_'))      return CACHE_TTL_COMPARE;
+    if (key.startsWith('search_'))       return CACHE_TTL_SEARCH;
     return CACHE_TTL_DEFAULT;
 }
 
 let cache = {};
 
+// Tamanho máximo do ficheiro de cache em disco. Se exceder, fazemos reset total
+// no arranque - previne degradação após meses de uso (parse JSON gigante = 3-5s).
+const CACHE_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 // Carregar cache do disco no arranque
 try {
     if (fs.existsSync(CACHE_FILE)) {
-        const raw = fs.readFileSync(CACHE_FILE, 'utf8');
-        cache = JSON.parse(raw);
-        // Remover entries expiradas logo no arranque
-        const now = Date.now();
-        let expired = 0;
-        for (const key of Object.keys(cache)) {
-            const ttl = getTTL(key);
-            if (!cache[key] || (now - cache[key].timestamp) >= ttl) {
-                delete cache[key];
-                expired++;
+        const stat = fs.statSync(CACHE_FILE);
+        if (stat.size > CACHE_MAX_FILE_SIZE) {
+            console.warn(`[cache] Ficheiro excedeu ${CACHE_MAX_FILE_SIZE} bytes (${stat.size}). A fazer reset.`);
+            fs.unlinkSync(CACHE_FILE);
+            cache = {};
+        } else {
+            const raw = fs.readFileSync(CACHE_FILE, 'utf8');
+            cache = JSON.parse(raw);
+            // Remover entries expiradas logo no arranque (GC)
+            const now = Date.now();
+            let expired = 0;
+            for (const key of Object.keys(cache)) {
+                const ttl = getTTL(key);
+                if (!cache[key] || (now - cache[key].timestamp) >= ttl) {
+                    delete cache[key];
+                    expired++;
+                }
             }
+            const remaining = Object.keys(cache).length;
+            console.log(`[cache] Carregado do disco: ${remaining} entradas (${expired} expiradas removidas, ${Math.round(stat.size/1024)}KB)`);
         }
-        const remaining = Object.keys(cache).length;
-        console.log(`[cache] Carregado do disco: ${remaining} entradas (${expired} expiradas removidas)`);
     } else {
         console.log('[cache] Sem ficheiro de cache no disco - vai criar novo.');
     }
@@ -103,18 +123,35 @@ try {
 }
 
 let saveTimer = null;
+function flushCacheSync() {
+    try {
+        if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
+        fs.writeFileSync(CACHE_FILE, JSON.stringify(cache), 'utf8');
+    } catch (e) {
+        console.error('[cache] Erro ao gravar cache:', e.message);
+    }
+}
 function persistCache() {
     if (saveTimer) return; // já está agendado
     saveTimer = setTimeout(() => {
         saveTimer = null;
-        try {
-            if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
-            fs.writeFileSync(CACHE_FILE, JSON.stringify(cache), 'utf8');
-        } catch (e) {
-            console.error('[cache] Erro ao gravar cache:', e.message);
-        }
+        flushCacheSync();
     }, SAVE_DEBOUNCE_MS);
 }
+
+// Garante flush da cache em shutdown - evita perder updates pendentes no debounce
+// (ex: server restart entre setCache e persistCache real).
+['SIGTERM', 'SIGINT'].forEach(sig => {
+    process.on(sig, () => {
+        if (saveTimer) {
+            clearTimeout(saveTimer);
+            saveTimer = null;
+            console.log(`[cache] ${sig} recebido - flush sync antes de sair.`);
+            flushCacheSync();
+        }
+        process.exit(0);
+    });
+});
 
 function getCached(key) {
     const ttl = getTTL(key);
@@ -157,10 +194,16 @@ function msUntilNextRefresh() {
     return Math.min(...candidates) - now.getTime();
 }
 
+// Hora local PT para logs - facilita debug quando se vê os logs do Render
+function nowLisbon() {
+    return new Date().toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' });
+}
+
+const REFRESH_FETCH_TIMEOUT_MS = 60_000; // 60s para o /all interno completar
+
 async function refreshAllProducts(port) {
-    const startedAt = new Date().toISOString();
     try {
-        console.log(`[auto-refresh] ⏰ A executar refresh agendado às ${startedAt}...`);
+        console.log(`[auto-refresh] ⏰ A executar refresh agendado às ${nowLisbon()}...`);
         // Limpa só a cache de produtos/preços (URLs ficam - não mudam quase nunca)
         let cleared = 0;
         for (const key of Object.keys(cache)) {
@@ -171,13 +214,38 @@ async function refreshAllProducts(port) {
         }
         persistCache();
         console.log(`[auto-refresh] Cache limpa: ${cleared} entradas removidas. A chamar /all para repopular...`);
-        // Re-popula /all via chamada interna
-        const res = await fetch(`http://localhost:${port}/api/products/all`);
-        const data = await res.json();
-        console.log(`[auto-refresh] ✅ Refresh concluído com ${data.total || 0} produtos a ${new Date().toISOString()}.`);
+
+        // Re-popula /all via chamada interna com timeout para não bloquear o scheduler
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), REFRESH_FETCH_TIMEOUT_MS);
+        try {
+            const res = await fetch(`http://localhost:${port}/api/products/all`, { signal: ctrl.signal });
+            const data = await res.json();
+            console.log(`[auto-refresh] ✅ Refresh concluído com ${data.total || 0} produtos a ${nowLisbon()}.`);
+        } finally {
+            clearTimeout(timer);
+        }
     } catch (e) {
-        console.error('[auto-refresh] ❌ Erro:', e.message);
+        if (e.name === 'AbortError') {
+            console.error(`[auto-refresh] ❌ Timeout (${REFRESH_FETCH_TIMEOUT_MS}ms) - refresh abortado a ${nowLisbon()}.`);
+        } else {
+            console.error('[auto-refresh] ❌ Erro:', e.message);
+        }
     }
+}
+
+// Tempo (ms) desde a última refresh oficial. Se o server arrancar logo a seguir
+// a uma das horas-target e a cache estiver vazia, vale a pena fazer refresh já
+// (em vez de esperar 12h pela próxima).
+function msSinceLastRefresh() {
+    const now = new Date();
+    const candidates = REFRESH_HOURS.map(h => {
+        const d = new Date(now);
+        d.setHours(h, 0, 0, 0);
+        if (d.getTime() > now.getTime()) d.setDate(d.getDate() - 1);
+        return d.getTime();
+    });
+    return now.getTime() - Math.max(...candidates);
 }
 
 function scheduleAutoRefresh(port) {
@@ -189,9 +257,21 @@ function scheduleAutoRefresh(port) {
             setTimeout(tick, delay);
         });
     }
+
+    // Se o servidor reiniciou DEPOIS de uma hora de refresh há menos de 30 min,
+    // e ainda não há cache de produtos, dispara refresh imediato. Caso contrário,
+    // ficaríamos sem dados frescos por 12h.
+    const sinceLast = msSinceLastRefresh();
+    const cacheEmpty = !cache['all_products'];
+    if (sinceLast < 30 * 60 * 1000 && cacheEmpty) {
+        console.log(`[auto-refresh] Restart próximo de hora de refresh (${Math.round(sinceLast/60000)}min depois). A executar refresh imediato.`);
+        setTimeout(tick, 5000); // 5s para o servidor terminar de arrancar
+        return;
+    }
+
     const initialDelay = msUntilNextRefresh();
     const hours = (initialDelay / 3600000).toFixed(1);
-    console.log(`[auto-refresh] Agendado para correr às ${REFRESH_HOURS.join('h e ')}h. Próximo refresh em ${hours}h.`);
+    console.log(`[auto-refresh] Agendado para correr às ${REFRESH_HOURS.join('h e ')}h UTC. Próximo refresh em ${hours}h.`);
     setTimeout(tick, initialDelay);
 }
 
@@ -346,14 +426,44 @@ function isQuerySpecificEnough(query) {
     return nonGeneric.length >= 2;
 }
 
+// Parse robusto de preço em formato europeu (PT) e americano. Casos cobertos:
+//   "10,50"        → 10.5      (decimal vírgula)
+//   "10.50"        → 10.5      (decimal ponto)
+//   "1.000,50"     → 1000.5    (PT: ponto = milhar, vírgula = decimal)
+//   "1,000.50"     → 1000.5    (US: vírgula = milhar, ponto = decimal)
+//   "10.500,00"    → 10500     (PT com milhar)
+//   "€10,50"       → 10.5      (símbolos removidos)
+// A heurística: o ÚLTIMO separador (',' ou '.') é o decimal SE estiver seguido de
+// 1 ou 2 dígitos no fim da string. Os outros separadores são milhares.
 function parsePrice(priceStr) {
     if (!priceStr) return 0;
     const cleaned = String(priceStr).replace(/[^0-9.,]/g, '');
-    // Trata vírgula como decimal (formato europeu)
-    const normalized = cleaned.includes(',') && !cleaned.includes('.')
-        ? cleaned.replace(',', '.')
-        : cleaned.replace(/\./g, '').replace(',', '.');
-    return parseFloat(normalized) || 0;
+    if (!cleaned) return 0;
+
+    const lastDot   = cleaned.lastIndexOf('.');
+    const lastComma = cleaned.lastIndexOf(',');
+    const lastSep   = Math.max(lastDot, lastComma);
+
+    if (lastSep === -1) {
+        // Sem separadores - número inteiro
+        return parseFloat(cleaned) || 0;
+    }
+
+    const after = cleaned.length - lastSep - 1;
+    let normalized;
+
+    if (after === 1 || after === 2) {
+        // Último separador é decimal (1 ou 2 casas depois)
+        const intPart = cleaned.slice(0, lastSep).replace(/[.,]/g, '');
+        const decPart = cleaned.slice(lastSep + 1);
+        normalized = `${intPart}.${decPart}`;
+    } else {
+        // Último separador é milhar (3+ dígitos depois, ou exatamente 3) - sem decimais
+        normalized = cleaned.replace(/[.,]/g, '');
+    }
+
+    const num = parseFloat(normalized);
+    return Number.isFinite(num) ? num : 0;
 }
 
 // Faz query Serper Shopping específica para uma loja e devolve o primeiro item que
@@ -419,15 +529,27 @@ function extractDirectFromGoogleRedirect(link) {
     return null;
 }
 
+// Valida que uma string é uma URL bem formada com http/https. Defesa contra
+// dados malformados vindos do Serper que pudessem injetar javascript: ou similar.
+function isSafeUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    try {
+        const u = new URL(url);
+        return u.protocol === 'http:' || u.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
 function getStoreDirectLink(storeName, productName, googleLink) {
     // Se o link já vai direto à loja (não é um redirect do Google), usamos.
-    if (googleLink && !isGoogleLink(googleLink)) {
+    if (googleLink && !isGoogleLink(googleLink) && isSafeUrl(googleLink)) {
         return googleLink;
     }
 
     // Tenta extrair o URL real do redirect Google (ex: /url?q=https://www.worten.pt/...)
     const extracted = extractDirectFromGoogleRedirect(googleLink);
-    if (extracted) return extracted;
+    if (extracted && isSafeUrl(extracted)) return extracted;
     // Caso contrário, geramos um link de pesquisa direto na loja.
     // URLs verificados / fallback para homepage se a loja não tem search público fiável.
     const storeSearchUrls = {
@@ -527,7 +649,7 @@ function normalizeProduct(item, category) {
         image: item.imageUrl || '',
         category: category,
         subcategory: item.assignedSubcategory || 'Geral', // Usa a subcategoria atribuída ou 'Geral'
-        rating: item.rating ? parseFloat(item.rating).toFixed(1) : (4 + Math.random()).toFixed(1),
+        rating: item.rating ? parseFloat(item.rating).toFixed(1) : null,
         description: item.snippet || item.description || `Compara preços deste produto nas lojas parceiras e compra onde for mais barato. Abaixo encontras todas as lojas que têm este produto em stock, ordenadas pelo preço mais baixo.`,
         discount: hasDiscount,
         discountPercent: discountPercent,
@@ -581,76 +703,90 @@ router.get('/search', heavyLimiter, async (req, res) => {
     }
 });
 
+// Número de resultados por categoria pedidos ao Serper Shopping (max útil: ~20).
+// Reduzir poupa créditos; aumentar dá mais variedade na grid inicial.
+const SERPER_RESULTS_PER_CATEGORY = 10;
+
+// Mutex: se vários pedidos a /all chegam simultaneamente com cache fria, só dispara
+// UMA chamada Serper - todos os outros recebem a mesma Promise. Evita thundering
+// herd (10 users × 14 queries = 140 créditos por nada).
+let allProductsInFlight = null;
+
+async function fetchAllProductsCatalog() {
+    console.log(`[Serper] A carregar todo o catálogo base... (A executar ${CATEGORY_QUERIES.length} pesquisas em paralelo)`);
+    const allProducts = [];
+
+    const fetchPromises = CATEGORY_QUERIES.map(async (qObj) => {
+        try {
+            const response = await fetch(SERPER_URL, {
+                method: 'POST',
+                headers: { 'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ q: qObj.query, gl: 'pt', hl: 'pt', num: SERPER_RESULTS_PER_CATEGORY })
+            });
+
+            if (!response.ok) return [];
+
+            const data = await response.json();
+            return (data.shopping || [])
+                .filter(item => isStoreVerified(item.source))
+                // FILTRO CRÍTICO: descartar produtos com títulos demasiado genéricos
+                // (ex: "Asus Portátil") - cada loja devolveria um modelo diferente
+                // e a comparação ficaria errada.
+                .filter(item => isQuerySpecificEnough(item.title || ''))
+                .map(item => {
+                    item.assignedSubcategory = qObj.sub;
+                    return normalizeProduct(item, qObj.cat);
+                });
+        } catch (e) {
+            return [];
+        }
+    });
+
+    const results = await Promise.all(fetchPromises);
+    results.forEach(items => allProducts.push(...items));
+
+    // Deduplicar por título normalizado
+    const seen = new Set();
+    const dedupedProducts = [];
+    for (const p of allProducts) {
+        const key = normalizeText(p.name);
+        if (key && !seen.has(key)) {
+            seen.add(key);
+            dedupedProducts.push(p);
+        }
+    }
+
+    dedupedProducts.sort(() => 0.5 - Math.random());
+    return { products: dedupedProducts, total: dedupedProducts.length };
+}
+
 // GET /api/products/all - Pega produtos de todas as categorias para preencher a loja inicial
 router.get('/all', lightLimiter, async (req, res) => {
     if (!SERPER_API_KEY) return res.status(500).json({ error: 'SERPER_API_KEY não configurada' });
 
-    // Tentar ir buscar à Cache!
     const cacheKey = `all_products`;
     const cachedData = getCached(cacheKey);
     if (cachedData) return res.json(cachedData);
 
     try {
-        console.log(`[Serper] A carregar todo o catálogo base... (A executar ${CATEGORY_QUERIES.length} pesquisas em paralelo)`);
-        const allProducts = [];
-
-        // Fazer as pesquisas em paralelo para ser muito rápido!
-        const fetchPromises = CATEGORY_QUERIES.map(async (qObj) => {
-            try {
-                const response = await fetch(SERPER_URL, {
-                    method: 'POST',
-                    headers: { 'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ q: qObj.query, gl: 'pt', hl: 'pt', num: 10 }) // max 10 por tag
-                });
-
-                if (!response.ok) return [];
-
-                const data = await response.json();
-                return (data.shopping || [])
-                    .filter(item => isStoreVerified(item.source))
-                    // FILTRO CRÍTICO: descartar produtos com títulos demasiado
-                    // genéricos (ex: "Asus Portátil", "Frigorífico Bosch") porque
-                    // não permitem comparação fiável entre lojas - cada loja
-                    // devolverá um modelo diferente.
-                    .filter(item => isQuerySpecificEnough(item.title || ''))
-                    .map(item => {
-                        // Injetar a subcategoria correta ANTES de normalizar
-                        item.assignedSubcategory = qObj.sub;
-                        return normalizeProduct(item, qObj.cat);
-                    });
-            } catch (e) {
-                return [];
-            }
-        });
-
-        // Esperar por todas as pesquisas
-        const results = await Promise.all(fetchPromises);
-
-        // Juntar tudo num único array
-        results.forEach(items => allProducts.push(...items));
-
-        // Deduplicar por título normalizado (mesmo produto pode vir de várias lojas)
-        const seen = new Set();
-        const dedupedProducts = [];
-        for (const p of allProducts) {
-            const key = normalizeText(p.name);
-            if (key && !seen.has(key)) {
-                seen.add(key);
-                dedupedProducts.push(p);
-            }
+        // Se já existe uma chamada em curso, juntar-se a essa em vez de duplicar
+        if (allProductsInFlight) {
+            const result = await allProductsInFlight;
+            return res.json(result);
         }
 
-        // Misturar array aleatoriamente
-        dedupedProducts.sort(() => 0.5 - Math.random());
+        allProductsInFlight = fetchAllProductsCatalog()
+            .then(result => {
+                if (result.products.length > 0) {
+                    setCache(cacheKey, result);
+                } else {
+                    console.error("[Serper] Atenção: Nenhum produto carregado. Verifica a tua API Key!");
+                }
+                return result;
+            })
+            .finally(() => { allProductsInFlight = null; });
 
-        const result = { products: dedupedProducts, total: dedupedProducts.length };
-
-        // SÓ GUARDAR NA CACHE SE CONSEGUIU CARREGAR PRODUTOS (Para evitar cache de erros)
-        if (dedupedProducts.length > 0) {
-            setCache(cacheKey, result);
-        } else {
-            console.error("[Serper] Atenção: Nenhum produto carregado. Verifica a tua API Key!");
-        }
+        const result = await allProductsInFlight;
         return res.json(result);
     } catch (err) {
         return res.status(500).json({ error: err.message });
@@ -727,8 +863,10 @@ router.get('/hero-images', lightLimiter, async (req, res) => {
         }
 
         try {
+            // Timeout curto (5s) porque hero-images é "nice to have" - se demora,
+            // melhor cair para a imagem original do Google Shopping do que bloquear.
             const ctrl = new AbortController();
-            const timer = setTimeout(() => ctrl.abort(), 8000);
+            const timer = setTimeout(() => ctrl.abort(), 5000);
             const response = await fetch(SERPER_IMAGES_URL, {
                 method: 'POST',
                 headers: { 'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json' },
@@ -838,11 +976,21 @@ router.get('/compare', heavyLimiter, async (req, res) => {
             TARGET_STORES_FOR_COMPARE.map(s => fetchStoreOffer(q, s))
         );
 
+        // Log de quais lojas devolveram resultados vs quais falharam silenciosamente
+        TARGET_STORES_FOR_COMPARE.forEach((store, idx) => {
+            if (!offers[idx]) {
+                console.warn(`[compare] ${store.name}: nenhuma oferta encontrada para "${q}" (sem match ou erro Serper)`);
+            }
+        });
+
         const shops = [];
         for (const offer of offers) {
             if (!offer) continue;
             const price = parsePrice(offer.price);
-            if (price <= 0) continue;
+            if (price <= 0) {
+                console.warn(`[compare] ${offer.source}: preço inválido "${offer.price}" para "${q}"`);
+                continue;
+            }
             shops.push({
                 name: offer.source,
                 price: price.toFixed(2),

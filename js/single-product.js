@@ -56,7 +56,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById('prodTitle').innerText = data.name;
     document.getElementById('mainImage').src = data.image;
     document.getElementById('mainImage').alt = data.name;
-    document.getElementById('prodRating').innerText = data.rating;
+    // Esconder bloco de rating se não vier rating real (Serper nem sempre devolve)
+    const ratingEl = document.getElementById('prodRating');
+    if (ratingEl) {
+        if (data.rating) {
+            ratingEl.innerText = data.rating;
+        } else {
+            const wrapper = ratingEl.closest('.product-rating, .rating, [class*="rating"]') || ratingEl.parentElement;
+            if (wrapper) wrapper.style.display = 'none';
+        }
+    }
     document.getElementById('breadcrumbCat').innerText = CATEGORY_LABEL[data.category] || data.category || '';
     
     if (data.description) {

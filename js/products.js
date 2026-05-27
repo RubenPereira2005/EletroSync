@@ -64,9 +64,7 @@ function renderProduct(p) {
             <h3 class="product-title">${p.name}</h3>
 
             <div class="product-meta">
-              <span class="product-rating">
-                <i class="fa-solid fa-star"></i> ${p.rating}
-              </span>
+              ${p.rating ? `<span class="product-rating"><i class="fa-solid fa-star"></i> ${p.rating}</span>` : ''}
               <span class="product-shops-count text-primary" style="cursor: help;" title="Clica para ver preços noutras lojas">
                 <i class="fa-solid fa-magnifying-glass-chart"></i> Comparar preços
               </span>
