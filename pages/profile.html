@@ -295,15 +295,30 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="currentPassword" class="form-label">Palavra-passe atual</label>
-                        <input type="password" class="form-control" id="currentPassword" name="current_password" required minlength="1" maxlength="72" autocomplete="current-password">
+                        <div class="es-pwd-toggle-wrap">
+                            <input type="password" class="form-control" id="currentPassword" name="current_password" required minlength="1" maxlength="72" autocomplete="current-password">
+                            <button type="button" class="es-pwd-toggle-btn" aria-label="Mostrar palavra-passe" aria-pressed="false">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="newPassword" class="form-label">Nova palavra-passe</label>
-                        <input type="password" class="form-control" id="newPassword" name="new_password" required minlength="8" maxlength="72" autocomplete="new-password">
+                        <div class="es-pwd-toggle-wrap">
+                            <input type="password" class="form-control" id="newPassword" name="new_password" required minlength="8" maxlength="72" autocomplete="new-password">
+                            <button type="button" class="es-pwd-toggle-btn" aria-label="Mostrar palavra-passe" aria-pressed="false">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="newPasswordConfirm" class="form-label">Confirmar nova palavra-passe</label>
-                        <input type="password" class="form-control" id="newPasswordConfirm" name="confirm" required minlength="8" maxlength="72" autocomplete="new-password">
+                        <div class="es-pwd-toggle-wrap">
+                            <input type="password" class="form-control" id="newPasswordConfirm" name="confirm" required minlength="8" maxlength="72" autocomplete="new-password">
+                            <button type="button" class="es-pwd-toggle-btn" aria-label="Mostrar palavra-passe" aria-pressed="false">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">

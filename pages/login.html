@@ -99,9 +99,14 @@
 
                 <div class="mb-3">
                     <label for="password" class="form-label">Palavra-passe</label>
-                    <input type="password" class="form-control" id="password" name="password" required
-                           minlength="1" maxlength="72" autocomplete="current-password"
-                           placeholder="A tua palavra-passe">
+                    <div class="es-pwd-toggle-wrap">
+                        <input type="password" class="form-control" id="password" name="password" required
+                               minlength="1" maxlength="72" autocomplete="current-password"
+                               placeholder="A tua palavra-passe">
+                        <button type="button" class="es-pwd-toggle-btn" aria-label="Mostrar palavra-passe" aria-pressed="false">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">

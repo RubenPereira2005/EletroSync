@@ -13,6 +13,27 @@ window.fetchWithTimeout = function (url, options = {}, ms = 15000) {
         .finally(() => clearTimeout(timer));
 };
 
+// Auto-wire dos toggles de password: qualquer .es-pwd-toggle-wrap > button.es-pwd-toggle-btn
+// alterna a visibilidade do input password adjacente. Funciona com inputs inseridos
+// dinamicamente também (delegação no document).
+document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.es-pwd-toggle-btn');
+    if (!btn) return;
+    e.preventDefault();
+    const wrap = btn.closest('.es-pwd-toggle-wrap');
+    const input = wrap?.querySelector('input');
+    if (!input) return;
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    const icon = btn.querySelector('i');
+    if (icon) {
+        icon.classList.toggle('fa-eye', !isHidden);
+        icon.classList.toggle('fa-eye-slash', isHidden);
+    }
+    btn.setAttribute('aria-label', isHidden ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe');
+    btn.setAttribute('aria-pressed', String(isHidden));
+});
+
 // Converte nome de produto em slug URL-friendly. Determinista, para servir como id.
 // Ex: "iPhone 15 Pro Max 256GB" → "iphone-15-pro-max-256gb"
 window.slugifyProductName = function (name) {

@@ -1126,3 +1126,42 @@ body.es-mobile-nav-active {
     padding: 0 6px;
     color: var(--es-text-muted);
 }
+
+/* =============================================================================
+ * TOGGLE OLHO NAS PASSWORDS (mostrar/ocultar)
+ * ============================================================================= */
+
+.es-pwd-toggle-wrap {
+    position: relative;
+}
+
+.es-pwd-toggle-wrap > input {
+    padding-right: 44px !important;
+}
+
+.es-pwd-toggle-btn {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    color: var(--es-text-muted);
+    cursor: pointer;
+    border-radius: var(--es-radius-sm);
+    transition: color var(--es-transition), background var(--es-transition);
+}
+
+.es-pwd-toggle-btn:hover,
+.es-pwd-toggle-btn:focus-visible {
+    color: var(--es-text);
+    background: var(--es-gray-100);
+    outline: none;
+}
+
+.es-pwd-toggle-btn i { font-size: 0.95rem; }
