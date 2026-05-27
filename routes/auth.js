@@ -113,7 +113,7 @@ router.post('/update-password', async (req, res) => {
 // ENDPOINTS DE GESTÃO DE CONTA (requerem token de sessão válido)
 // =============================================================================
 
-// Middleware: valida o Bearer token e expõe req.user + req.userClient (com token)
+// Middleware: valida o Bearer token e expõe req.user.
 async function requireAuth(req, res, next) {
     const authHeader = req.headers.authorization || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
@@ -124,15 +124,26 @@ async function requireAuth(req, res, next) {
 
     req.user = data.user;
     req.userToken = token;
-    req.userClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
-        auth: { persistSession: false },
-        global: { headers: { Authorization: `Bearer ${token}` } }
-    });
     next();
 }
 
-// PUT /api/auth/profile - atualiza nome (e/ou email - email exige confirmação)
+// Cliente admin (service_role) - usado para operações que requerem updateUser
+// (Supabase exige sessão estabelecida, que é impossível com só um Bearer token).
+function getAdminClient() {
+    const serviceKey = process.env.SUPABASE_SERVICE_KEY;
+    if (!serviceKey) return null;
+    return createClient(process.env.SUPABASE_URL, serviceKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+    });
+}
+
+// PUT /api/auth/profile - atualiza nome e/ou email do utilizador autenticado.
+// Usa o cliente admin (service_role) porque updateUser via Bearer token simples
+// dá "Auth session missing" (Supabase requer sessão completa).
 router.put('/profile', requireAuth, async (req, res) => {
+    const admin = getAdminClient();
+    if (!admin) return res.status(500).json({ error: 'Funcionalidade não configurada no servidor (SUPABASE_SERVICE_KEY em falta).' });
+
     const { name, email } = req.body || {};
     const updates = {};
 
@@ -141,9 +152,11 @@ router.put('/profile', requireAuth, async (req, res) => {
         if (trimmed.length < 2 || trimmed.length > 80) {
             return res.status(400).json({ error: 'Nome deve ter entre 2 e 80 caracteres.' });
         }
-        updates.data = { full_name: trimmed };
+        // Preservar outras keys de user_metadata se existirem
+        updates.user_metadata = { ...(req.user.user_metadata || {}), full_name: trimmed };
     }
 
+    let emailChanged = false;
     if (typeof email === 'string') {
         const trimmed = email.trim();
         if (trimmed.length === 0 || trimmed.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
@@ -151,6 +164,7 @@ router.put('/profile', requireAuth, async (req, res) => {
         }
         if (trimmed !== req.user.email) {
             updates.email = trimmed;
+            emailChanged = true;
         }
     }
 
@@ -158,20 +172,18 @@ router.put('/profile', requireAuth, async (req, res) => {
         return res.status(400).json({ error: 'Nada para atualizar.' });
     }
 
-    const { data, error } = await req.userClient.auth.updateUser(updates);
+    const { data, error } = await admin.auth.admin.updateUserById(req.user.id, updates);
     if (error) return res.status(400).json({ error: error.message });
 
-    const emailChanged = !!updates.email;
     return res.json({
-        message: emailChanged
-            ? 'Pedido enviado. Confirma o novo email para concluir a alteração.'
-            : 'Dados atualizados.',
+        message: emailChanged ? 'Dados atualizados. O email foi alterado.' : 'Dados atualizados.',
         user: data.user,
     });
 });
 
 // POST /api/auth/change-password - altera a password do utilizador autenticado.
-// Re-verifica a password antiga antes de aceitar (segurança).
+// Re-verifica a password antiga antes de aceitar (segurança). Usa admin client
+// para o update final (Supabase exige sessão estabelecida, que não temos no servidor).
 router.post('/change-password', requireAuth, async (req, res) => {
     const { current_password, new_password } = req.body || {};
 
@@ -185,6 +197,9 @@ router.post('/change-password', requireAuth, async (req, res) => {
         return res.status(400).json({ error: 'A nova palavra-passe tem de ser diferente da atual.' });
     }
 
+    const admin = getAdminClient();
+    if (!admin) return res.status(500).json({ error: 'Funcionalidade não configurada no servidor (SUPABASE_SERVICE_KEY em falta).' });
+
     // Re-autenticar com a password atual para confirmar identidade
     const verify = await supabase.auth.signInWithPassword({
         email: req.user.email,
@@ -194,34 +209,28 @@ router.post('/change-password', requireAuth, async (req, res) => {
         return res.status(401).json({ error: 'Palavra-passe atual incorreta.' });
     }
 
-    const { error } = await req.userClient.auth.updateUser({ password: new_password });
+    const { error } = await admin.auth.admin.updateUserById(req.user.id, { password: new_password });
     if (error) return res.status(400).json({ error: error.message });
 
     return res.json({ message: 'Palavra-passe alterada.' });
 });
 
 // DELETE /api/auth/account - elimina a conta do utilizador e os seus dados.
-// Requer SUPABASE_SERVICE_KEY no .env (chave service_role) para chamar admin.deleteUser.
+// Requer SUPABASE_SERVICE_KEY no .env (chave service_role).
 router.delete('/account', requireAuth, async (req, res) => {
-    const serviceKey = process.env.SUPABASE_SERVICE_KEY;
-    if (!serviceKey) {
-        return res.status(500).json({ error: 'Funcionalidade não configurada no servidor.' });
-    }
-
-    const adminClient = createClient(process.env.SUPABASE_URL, serviceKey, {
-        auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const admin = getAdminClient();
+    if (!admin) return res.status(500).json({ error: 'Funcionalidade não configurada no servidor (SUPABASE_SERVICE_KEY em falta).' });
 
     // Apagar dados do utilizador (cart_items, favorites). As tabelas têm RLS pelo user_id,
     // mas com service_role passamos por cima. Cascade no SQL é uma alternativa mais limpa.
     try {
-        await adminClient.from('cart_items').delete().eq('user_id', req.user.id);
-        await adminClient.from('favorites').delete().eq('user_id', req.user.id);
+        await admin.from('cart_items').delete().eq('user_id', req.user.id);
+        await admin.from('favorites').delete().eq('user_id', req.user.id);
     } catch (e) {
         console.error('[auth] delete account: erro a limpar dados:', e.message);
     }
 
-    const { error } = await adminClient.auth.admin.deleteUser(req.user.id);
+    const { error } = await admin.auth.admin.deleteUser(req.user.id);
     if (error) return res.status(400).json({ error: error.message });
 
     return res.json({ message: 'Conta eliminada.' });
