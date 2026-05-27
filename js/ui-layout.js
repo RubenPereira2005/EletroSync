@@ -24,6 +24,209 @@ window.slugifyProductName = function (name) {
         .slice(0, 80);
 };
 
+// Quando o user escreve uma palavra que é o nome de uma categoria (ou sinónimo)
+// na barra de pesquisa, em vez de pesquisar produtos com essa palavra navegamos
+// para a página da categoria. UX melhor: "gaming" mostra produtos gaming, não
+// resultados do Serper com "gaming" no título.
+const CATEGORY_KEYWORDS = {
+    eletrodomesticos: ['eletrodomesticos', 'eletrodomestico', 'frigorifico', 'maquina', 'aspirador', 'cozinha', 'lavandaria'],
+    informatica:      ['informatica', 'computador', 'computadores', 'portatil', 'portateis', 'pc', 'desktop', 'monitor', 'monitores', 'teclado', 'rato', 'impressora'],
+    smartphones:      ['smartphone', 'smartphones', 'telemovel', 'telemoveis', 'iphone', 'samsung galaxy', 'wearable', 'wearables', 'smartwatch', 'apple watch'],
+    imagem:           ['imagem', 'som', 'tv', 'televisao', 'televisao', 'soundbar', 'colunas', 'auscultadores', 'headphones'],
+    gaming:           ['gaming', 'gamer', 'jogos', 'consola', 'consolas', 'playstation', 'ps5', 'xbox', 'nintendo'],
+};
+
+function categoryFromQuery(raw) {
+    if (!raw) return null;
+    const q = String(raw).toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .trim();
+    if (q.length < 2) return null;
+    for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+        if (keywords.some(k => k === q)) return cat;
+    }
+    return null;
+}
+
+// Intercepta qualquer formulário de pesquisa: se a query for o nome de uma
+// categoria, redireciona para product.html?cat=X em vez de ?query=X.
+document.addEventListener('submit', function (e) {
+    const form = e.target;
+    if (!form || form.getAttribute('role') !== 'search') return;
+    const input = form.querySelector('input[name="query"]');
+    if (!input) return;
+    const cat = categoryFromQuery(input.value);
+    if (cat) {
+        e.preventDefault();
+        window.location.href = `product.html?cat=${cat}`;
+    }
+}, true);
+
+// =============================================================================
+// AUTOCOMPLETE NA PESQUISA - dropdown com produtos enquanto o user escreve
+// =============================================================================
+// Usa /api/products/all (cacheado no servidor) - não consome créditos Serper extra.
+// Carrega a lista uma vez por sessão e filtra client-side.
+(function () {
+    'use strict';
+    const MIN_CHARS = 2;
+    const MAX_RESULTS = 6;
+    const DEBOUNCE_MS = 180;
+
+    let catalogPromise = null;
+    function loadCatalog() {
+        if (catalogPromise) return catalogPromise;
+        catalogPromise = (window.fetchWithTimeout || fetch)('/api/products/all', {}, 10000)
+            .then(r => r.ok ? r.json() : { products: [] })
+            .then(d => Array.isArray(d.products) ? d.products : [])
+            .catch(() => []);
+        return catalogPromise;
+    }
+
+    function normalize(s) {
+        return String(s || '').toLowerCase()
+            .normalize('NFD').replace(/[̀-ͯ]/g, '');
+    }
+
+    function escapeHtml(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function attachAutocomplete(input) {
+        if (!input || input.dataset.esAutocomplete) return;
+        input.dataset.esAutocomplete = '1';
+        input.setAttribute('autocomplete', 'off');
+
+        const wrap = document.createElement('div');
+        wrap.className = 'es-autocomplete';
+        wrap.style.cssText = 'position:absolute;background:#fff;border:1px solid var(--es-gray-200);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.12);max-height:380px;overflow-y:auto;z-index:1100;display:none;min-width:280px;';
+        document.body.appendChild(wrap);
+
+        let timer = null;
+        let active = -1;
+        let lastResults = [];
+
+        function position() {
+            const r = input.getBoundingClientRect();
+            wrap.style.top   = (window.scrollY + r.bottom + 6) + 'px';
+            wrap.style.left  = (window.scrollX + r.left) + 'px';
+            wrap.style.width = Math.max(r.width, 280) + 'px';
+        }
+
+        function close() {
+            wrap.style.display = 'none';
+            active = -1;
+        }
+
+        function highlight() {
+            wrap.querySelectorAll('.es-ac-item').forEach((el, i) => {
+                el.style.background = i === active ? 'var(--es-gray-50)' : '';
+            });
+        }
+
+        function render(results, query) {
+            lastResults = results;
+            if (results.length === 0) {
+                wrap.innerHTML = `<div style="padding:14px 16px;color:var(--es-text-muted);font-size:.875rem;">Sem sugestões para "${escapeHtml(query)}"</div>`;
+                position();
+                wrap.style.display = 'block';
+                return;
+            }
+            const safeQ = escapeHtml(query);
+            wrap.innerHTML = results.map((p, i) => {
+                const safeName = escapeHtml(p.name);
+                const price = p.minPrice ? `<span style="color:var(--es-primary);font-weight:700;white-space:nowrap;">${parseFloat(p.minPrice).toFixed(2)}€</span>` : '';
+                const img = p.image ? `<img src="${escapeHtml(p.image)}" alt="" style="width:40px;height:40px;object-fit:contain;flex-shrink:0;border-radius:6px;background:var(--es-gray-50);" loading="lazy">` : '';
+                return `
+                    <a href="#" class="es-ac-item" data-idx="${i}" style="display:flex;align-items:center;gap:10px;padding:10px 14px;text-decoration:none;color:var(--es-text);border-bottom:1px solid var(--es-gray-100);">
+                        ${img}
+                        <span style="flex:1;font-size:.875rem;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${safeName}</span>
+                        ${price}
+                    </a>
+                `;
+            }).join('') + `
+                <a href="product.html?query=${encodeURIComponent(query)}" style="display:block;padding:10px 14px;text-align:center;color:var(--es-primary);font-weight:600;font-size:.875rem;text-decoration:none;background:var(--es-gray-50);">
+                    Ver todos os resultados para "${safeQ}"
+                </a>
+            `;
+            position();
+            wrap.style.display = 'block';
+        }
+
+        async function search(query) {
+            const q = normalize(query).trim();
+            if (q.length < MIN_CHARS) { close(); return; }
+
+            const all = await loadCatalog();
+            // Match: começa por... ou inclui o termo
+            const tokens = q.split(/\s+/);
+            const results = all.filter(p => {
+                const n = normalize(p.name);
+                return tokens.every(t => n.includes(t));
+            }).slice(0, MAX_RESULTS);
+
+            render(results, query);
+        }
+
+        input.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => search(input.value), DEBOUNCE_MS);
+        });
+
+        input.addEventListener('focus', () => {
+            if (input.value.trim().length >= MIN_CHARS) search(input.value);
+        });
+
+        input.addEventListener('blur', () => {
+            // Pequeno delay para permitir click nas sugestões
+            setTimeout(close, 180);
+        });
+
+        input.addEventListener('keydown', (e) => {
+            if (wrap.style.display !== 'block') return;
+            const items = wrap.querySelectorAll('.es-ac-item');
+            if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(active + 1, items.length - 1); highlight(); }
+            else if (e.key === 'ArrowUp')   { e.preventDefault(); active = Math.max(active - 1, -1); highlight(); }
+            else if (e.key === 'Enter' && active >= 0 && lastResults[active]) {
+                e.preventDefault();
+                navigateToProduct(lastResults[active]);
+            } else if (e.key === 'Escape') {
+                close();
+            }
+        });
+
+        wrap.addEventListener('click', (e) => {
+            const item = e.target.closest('.es-ac-item');
+            if (!item) return;
+            e.preventDefault();
+            const idx = parseInt(item.dataset.idx, 10);
+            if (lastResults[idx]) navigateToProduct(lastResults[idx]);
+        });
+
+        window.addEventListener('scroll', position, { passive: true });
+        window.addEventListener('resize', position);
+    }
+
+    function navigateToProduct(product) {
+        try { localStorage.setItem('selectedProduct', JSON.stringify(product)); } catch {}
+        const slug = window.slugifyProductName ? window.slugifyProductName(product.name) : '';
+        window.location.href = slug ? `single-product.html?p=${slug}` : 'single-product.html';
+    }
+
+    function init() {
+        document.querySelectorAll('form[role="search"] input[name="query"]').forEach(attachAutocomplete);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+    // Re-attach quando o ui-layout injeta o header dinamicamente
+    setTimeout(init, 100);
+    setTimeout(init, 500);
+})();
+
 // window.Toast - notificações empilhadas no canto inferior direito.
 // Uso: Toast.success('Adicionado!'), Toast.error('Falhou'), Toast.info('...')
 (function () {
@@ -123,7 +326,7 @@ window.slugifyProductName = function (name) {
         { href: 'product.html?cat=informatica',      label: 'Informática',         page: 'product.html', cat: 'informatica' },
         { href: 'product.html?cat=smartphones',      label: 'Smartphones',         page: 'product.html', cat: 'smartphones' },
         { href: 'product.html?cat=imagem',           label: 'Imagem e Som',        page: 'product.html', cat: 'imagem' },
-        { href: 'product.html?cat=jogos',            label: 'Gaming',              page: 'product.html', cat: 'jogos' },
+        { href: 'product.html?cat=gaming',           label: 'Gaming',              page: 'product.html', cat: 'gaming' },
     ];
 
     function buildHeader() {
@@ -214,38 +417,25 @@ window.slugifyProductName = function (name) {
         <footer class="es-footer">
             <div class="container">
                 <div class="row g-5">
-                    <div class="col-lg-4 col-md-6">
-                        <img src="images/logo3.png" alt="EletroSync" style="height:44px;margin-bottom:16px;filter:brightness(0) invert(1);">
-                        <p style="max-width:320px;">A tua plataforma de comparação de preços em Portugal. Encontra as melhores ofertas em eletrodomésticos, informática e muito mais.</p>
-                        <ul class="es-footer-social">
-                            <li><a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a></li>
-                            <li><a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a></li>
-                            <li><a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a></li>
-                        </ul>
+                    <div class="col-lg-6 col-md-6">
+                        <div class="es-footer-brand" style="font-family: var(--es-font-heading); font-size: 1.5rem; font-weight: 800; color: #fff; margin-bottom: 12px; letter-spacing: -0.02em;">
+                            ELETRO<span style="color: var(--es-primary);">SYNC</span>
+                        </div>
+                        <p style="max-width:380px;">A tua plataforma de comparação de preços em Portugal. Encontra as melhores ofertas em eletrodomésticos, informática, smartphones, gaming e muito mais.</p>
                     </div>
 
-                    <div class="col-lg-2 col-md-6 col-6">
-                        <h5>Sobre</h5>
+                    <div class="col-lg-3 col-md-3 col-sm-6">
+                        <h5>Navegação</h5>
                         <ul>
-                            <li><a href="#">Sobre nós</a></li>
-                            <li><a href="#">Condições</a></li>
-                            <li><a href="#">Trabalhar connosco</a></li>
-                            <li><a href="#">Parcerias</a></li>
+                            <li><a href="index.html">Início</a></li>
+                            <li><a href="product.html">Todos os produtos</a></li>
+                            <li><a href="favorites.html">Favoritos</a></li>
+                            <li><a href="profile.html">A minha conta</a></li>
                         </ul>
                     </div>
 
-                    <div class="col-lg-3 col-md-6 col-6">
-                        <h5>Apoio ao Cliente</h5>
-                        <ul>
-                            <li><a href="#">FAQ</a></li>
-                            <li><a href="#">Contactos</a></li>
-                            <li><a href="#">Política de Privacidade</a></li>
-                            <li><a href="#">Devoluções</a></li>
-                        </ul>
-                    </div>
-
-                    <div class="col-lg-3 col-md-6">
-                        <h5>Parcerias</h5>
+                    <div class="col-lg-3 col-md-3 col-sm-6">
+                        <h5>Lojas parceiras</h5>
                         <ul>
                             <li><span>Worten</span></li>
                             <li><span>Fnac</span></li>

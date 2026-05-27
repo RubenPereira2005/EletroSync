@@ -5,6 +5,24 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <!-- Auth gate: corre antes de renderizar qualquer coisa. Se não houver sessão,
+         redireciona imediatamente para login - evita o flash da página de perfil. -->
+    <script>
+        (function () {
+            try {
+                var raw = sessionStorage.getItem('eletrosync_session') || localStorage.getItem('eletrosync_session');
+                if (!raw) { window.location.replace('login.html'); return; }
+                var parsed = JSON.parse(raw);
+                var data = parsed.data || parsed;
+                if (!data || !data.session || !data.session.access_token) {
+                    window.location.replace('login.html');
+                }
+            } catch (e) {
+                window.location.replace('login.html');
+            }
+        })();
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
@@ -151,13 +169,7 @@
                         <a href="orders.html"><i class="fa-solid fa-receipt"></i> Os meus pedidos <i class="fa-solid fa-chevron-right chevron"></i></a>
                     </li>
                     <li>
-                        <a href="#" class="disabled-link"><i class="fa-solid fa-bell"></i> Alertas de Preço <span class="soon">Em breve</span></a>
-                    </li>
-                    <li>
-                        <a href="#" class="disabled-link"><i class="fa-solid fa-location-dot"></i> Moradas <span class="soon">Em breve</span></a>
-                    </li>
-                    <li>
-                        <a href="#" class="disabled-link"><i class="fa-solid fa-gear"></i> Configurações <span class="soon">Em breve</span></a>
+                        <a href="product.html"><i class="fa-solid fa-bag-shopping"></i> Explorar produtos <i class="fa-solid fa-chevron-right chevron"></i></a>
                     </li>
                     <li>
                         <a href="#" onclick="handleLogout(); return false;" class="logout"><i class="fa-solid fa-right-from-bracket"></i> Terminar sessão</a>

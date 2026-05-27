@@ -882,7 +882,8 @@ router.get('/compare', heavyLimiter, async (req, res) => {
 
             shop.link = url;
             delete shop._resolvedUrl;
-            delete shop.offerTitle;
+            // Mantemos shop.offerTitle - o frontend mostra-o para o user perceber
+            // se a loja está a anunciar uma variante diferente (cor/storage/bundle).
             validShops.push(shop);
         }
 

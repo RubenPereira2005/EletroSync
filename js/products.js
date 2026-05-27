@@ -127,6 +127,57 @@ function emptyStateHtml(opts = {}) {
     `;
 }
 
+// Estado de paginação por container (ex: { 'grid-all': 1, 'grid-gaming': 2 })
+const paginationState = {};
+const PAGE_SIZE = 16;
+
+function renderPagination(containerId, totalItems) {
+    // Procura um container de paginação ao lado do grid (criado dinamicamente)
+    const gridEl = document.getElementById(containerId);
+    if (!gridEl) return;
+    let pagEl = document.getElementById(`pagination-${containerId}`);
+    if (!pagEl) {
+        pagEl = document.createElement('nav');
+        pagEl.id = `pagination-${containerId}`;
+        pagEl.className = 'es-pagination';
+        pagEl.setAttribute('aria-label', 'Paginação de produtos');
+        gridEl.parentNode.insertBefore(pagEl, gridEl.nextSibling);
+    }
+
+    const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+    const current = paginationState[containerId] || 1;
+
+    if (totalPages <= 1) { pagEl.innerHTML = ''; return; }
+
+    // Mostra até 5 botões de página em volta do atual, com prev/next
+    const buttons = [];
+    function pageBtn(p, label, disabled, active) {
+        return `<button type="button" class="es-page-btn ${active ? 'active' : ''}" data-page="${p}" ${disabled ? 'disabled' : ''} aria-current="${active ? 'page' : 'false'}">${label}</button>`;
+    }
+
+    buttons.push(pageBtn(current - 1, '‹', current === 1, false));
+
+    let start = Math.max(1, current - 2);
+    let end = Math.min(totalPages, start + 4);
+    start = Math.max(1, end - 4);
+
+    if (start > 1) {
+        buttons.push(pageBtn(1, '1', false, false));
+        if (start > 2) buttons.push('<span class="es-page-ellipsis">…</span>');
+    }
+    for (let p = start; p <= end; p++) {
+        buttons.push(pageBtn(p, String(p), false, p === current));
+    }
+    if (end < totalPages) {
+        if (end < totalPages - 1) buttons.push('<span class="es-page-ellipsis">…</span>');
+        buttons.push(pageBtn(totalPages, String(totalPages), false, false));
+    }
+
+    buttons.push(pageBtn(current + 1, '›', current === totalPages, false));
+
+    pagEl.innerHTML = buttons.join('');
+}
+
 function renderTo(containerId, list, emptyOpts) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -146,13 +197,51 @@ function renderTo(containerId, list, emptyOpts) {
     } else {
         container.className = "row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3 pt-4 pb-5";
         container.removeAttribute('aria-busy');
+
         if (!list || list.length === 0) {
             container.innerHTML = emptyStateHtml(emptyOpts);
-        } else {
-            container.innerHTML = list.map(renderProduct).join("");
-            setTimeout(initFavoritesUI, 50);
+            // Limpar paginação se não há resultados
+            const pagEl = document.getElementById(`pagination-${containerId}`);
+            if (pagEl) pagEl.innerHTML = '';
+            return;
         }
+
+        // Aplicar paginação
+        const page = paginationState[containerId] || 1;
+        const startIdx = (page - 1) * PAGE_SIZE;
+        const visible = list.slice(startIdx, startIdx + PAGE_SIZE);
+
+        container.innerHTML = visible.map(renderProduct).join("");
+        setTimeout(initFavoritesUI, 50);
+        renderPagination(containerId, list.length);
     }
+}
+
+// Click handler global para os botões de paginação
+document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.es-page-btn');
+    if (!btn || btn.disabled) return;
+    const page = parseInt(btn.dataset.page, 10);
+    if (!Number.isFinite(page) || page < 1) return;
+
+    const pagEl = btn.closest('[id^="pagination-"]');
+    if (!pagEl) return;
+    const containerId = pagEl.id.replace('pagination-', '');
+    paginationState[containerId] = page;
+
+    // Re-renderizar com a página nova - usar a lista atual filtrada
+    // (chamamos applyAllFilters que já tem a lógica completa)
+    if (typeof applyAllFilters === 'function') {
+        applyAllFilters();
+        // Scroll para o topo do grid
+        const gridEl = document.getElementById(containerId);
+        if (gridEl) gridEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+});
+
+// Sempre que se mudam filtros (sort, store, categoria), voltar à página 1
+function resetPagination(containerId) {
+    paginationState[containerId] = 1;
 }
 
 function initSwiper() {
@@ -226,7 +315,7 @@ function applyAllFilters(forcedSub = undefined) {
     // 1. Identificar Categoria Ativa
     const activeTab = document.querySelector(".nav-link.active");
     const categoryTarget = activeTab.getAttribute("data-bs-target").replace("#nav-", "");
-    let catKey = (categoryTarget === "jogos") ? "gaming" : categoryTarget;
+    let catKey = categoryTarget;
 
     // 2. Identificar Subcategoria Ativa
     // Se passarmos forcedSub (clique no botão), usamos esse. 
@@ -241,27 +330,31 @@ function applyAllFilters(forcedSub = undefined) {
     const rangeEl = document.getElementById('filter-price') || document.querySelector(".form-range");
     const maxPrice = rangeEl ? parseFloat(rangeEl.value) : Infinity;
 
-    const storeMap = { worten: 'Worten', fnac: 'Fnac', radiopopular: 'Radio Popular', pcdiga: 'PC Diga' };
+    // Cada valor do filtro tem uma regex que apanha qualquer variante do nome da loja
+    // (FNAC, Fnac, fnac.pt, etc.) - é mais robusto que comparação exata por string.
+    const storePatterns = {
+        worten:       /worten/i,
+        fnac:         /fnac/i,
+        radiopopular: /r[aá]dio\s*popular|radiopopular/i,
+        pcdiga:       /pc\s*diga|pcdiga/i,
+    };
     const selectedStoreValues = Array.from(document.querySelectorAll('.store-filter:checked')).map(cb => cb.value);
-    const selectedStores = selectedStoreValues.map(v => storeMap[v] || v);
-
-    const promoChecked = false;
-    const eventXChecked = false;
 
     // 4. Filtragem Cruzada
     const filtered = products.filter(p => {
         const matchCategory = (categoryTarget === "all") || (p.category === catKey);
         const matchSub = (!activeSub || activeSub === "null") ? true : (p.subcategory === activeSub);
         const matchPrice = parseFloat(p.minPrice) <= maxPrice;
-        const matchPromo = promoChecked ? p.discount === true : true;
-        const matchEvent = eventXChecked ? p.eventX === true : true;
-        
-        const productStoreNames = p.shops.map(s => s.name);
-        const matchStore = selectedStores.length > 0 
-            ? selectedStores.some(store => productStoreNames.includes(store)) 
-            : true;
 
-        return matchCategory && matchSub && matchPrice && matchPromo && matchEvent && matchStore;
+        const matchStore = selectedStoreValues.length === 0
+            ? true
+            : selectedStoreValues.some(v => {
+                const pat = storePatterns[v];
+                if (!pat) return false;
+                return (p.shops || []).some(s => pat.test(s.name || ''));
+            });
+
+        return matchCategory && matchSub && matchPrice && matchStore;
     });
 
     renderTo(`grid-${categoryTarget}`, sortProducts(filtered), {
@@ -305,11 +398,16 @@ function sortProducts(list) {
 }
 
 // Filtros: reagir a mudanças nos controlos (sem botão "Aplicar")
-document.querySelectorAll('.store-filter').forEach(cb => cb.addEventListener('change', () => applyAllFilters()));
+// Sempre que um filtro muda, voltamos à página 1 (caso contrário ficamos a olhar
+// para uma página vazia quando o conjunto filtrado é menor que a página atual).
+function resetAllPagination() {
+    Object.keys(paginationState).forEach(k => { paginationState[k] = 1; });
+}
+document.querySelectorAll('.store-filter').forEach(cb => cb.addEventListener('change', () => { resetAllPagination(); applyAllFilters(); }));
 const priceInput = document.getElementById('filter-price') || document.querySelector('.form-range');
-if (priceInput) priceInput.addEventListener('input', () => applyAllFilters());
+if (priceInput) priceInput.addEventListener('input', () => { resetAllPagination(); applyAllFilters(); });
 const sortSelect = document.getElementById('sort-select');
-if (sortSelect) sortSelect.addEventListener('change', () => applyAllFilters());
+if (sortSelect) sortSelect.addEventListener('change', () => { resetAllPagination(); applyAllFilters(); });
 // Botão "Aplicar" legacy (se existir na página antiga)
 const applyBtn = document.querySelector(".filter-sidebar .btn-primary");
 if (applyBtn) applyBtn.addEventListener("click", () => applyAllFilters());

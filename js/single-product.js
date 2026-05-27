@@ -96,11 +96,27 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         const container = document.getElementById('shopsComparison');
+
+        // Para detetar variantes diferentes entre lojas, normalizamos os títulos.
+        // Se os títulos diferem significativamente, mostramos o título de cada loja
+        // para o user perceber porque os preços podem variar.
+        function normalizeTitle(t) {
+            return String(t || '').toLowerCase()
+                .normalize('NFD').replace(/[̀-ͯ]/g, '')
+                .replace(/[^a-z0-9\s]/g, ' ')
+                .replace(/\s+/g, ' ').trim();
+        }
+        const titlesNormalized = sortedShops.map(s => normalizeTitle(s.offerTitle));
+        const titlesDiffer = new Set(titlesNormalized.filter(Boolean)).size > 1;
+
         container.innerHTML = sortedShops.map((shop, index) => {
             const colors = STORE_COLORS[shop.name] || { dot: '#666' };
             const isBest = index === 0;
             const bestBadge = isBest
                 ? '<span class="es-badge es-badge-success ms-2"><i class="fa-solid fa-trophy"></i> Melhor preço</span>'
+                : '';
+            const titleHint = (titlesDiffer && shop.offerTitle)
+                ? `<div class="text-muted small mt-1" style="font-size: 11px; line-height: 1.3;" title="Título exato anunciado pela loja">${escapeHtml(shop.offerTitle).slice(0, 90)}</div>`
                 : '';
             return `
                 <tr class="${isBest ? 'best-row' : ''}">
@@ -110,6 +126,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                             <span>${shop.name}</span>
                             ${bestBadge}
                         </div>
+                        ${titleHint}
                     </td>
                     <td><span class="availability-ok"><i class="fa-solid fa-circle-check"></i>Em stock</span></td>
                     <td><span class="price-cell">${parseFloat(shop.price).toFixed(2)}€</span></td>
@@ -121,6 +138,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                 </tr>
             `;
         }).join('');
+
+    }
+
+    function escapeHtml(s) {
+        return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     // Mostrar loading (NÃO renderizar a oferta original - pode ter preço impreciso
