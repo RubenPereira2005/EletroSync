@@ -487,6 +487,58 @@ async function fetchStoreOffer(query, store) {
         return null;
     }
 }
+
+// 1 query genérica que devolve TODAS as ofertas que o Google Shopping tem para
+// uma query. O productId vem em cada item e permite agrupar ofertas do MESMO
+// produto entre lojas (é como o Google identifica a SKU canónica internamente).
+async function fetchAllShoppingOffers(query) {
+    try {
+        const response = await fetch(SERPER_URL, {
+            method: 'POST',
+            headers: { 'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ q: query, gl: 'pt', hl: 'pt', num: 40 }),
+        });
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data.shopping || [];
+    } catch (e) {
+        console.error(`[fetchAllShoppingOffers] erro: ${e.message}`);
+        return [];
+    }
+}
+
+// Escolhe o productId "dominante" - o que tem mais peso nas ofertas. Pontua
+// cada productId por: (a) número de ofertas, (b) bonus se loja é parceira,
+// (c) bonus se título contém o modelo da query, (d) bonus se preço é razoável.
+// Devolve null se nenhuma oferta tiver productId (caso raro mas existe).
+function pickDominantProductId(offers, queryModel) {
+    const scores = new Map();
+    const sources = new Map(); // productId → Set de stores
+    for (const offer of offers) {
+        const pid = offer.productId;
+        if (!pid) continue;
+        let score = scores.get(pid) || 0;
+        score += 1;
+        if (isStoreVerified(offer.source)) score += 3;
+        if (queryModel && offer.title && offer.title.toLowerCase().includes(queryModel.toLowerCase())) score += 2;
+        if (offer.price && parsePrice(offer.price) > 1) score += 1;
+        scores.set(pid, score);
+        if (!sources.has(pid)) sources.set(pid, new Set());
+        sources.get(pid).add((offer.source || '').toLowerCase());
+    }
+    if (scores.size === 0) return null;
+    // Empate desempata pelo número de lojas distintas
+    let best = null, bestScore = -1, bestSources = 0;
+    for (const [pid, score] of scores.entries()) {
+        const distinctSrc = sources.get(pid).size;
+        if (score > bestScore || (score === bestScore && distinctSrc > bestSources)) {
+            bestScore = score;
+            bestSources = distinctSrc;
+            best = pid;
+        }
+    }
+    return best;
+}
 // Mapeamento exato de cada pesquisa para a sua Categoria e Subcategoria
 const CATEGORY_QUERIES = [
     { cat: 'eletrodomesticos', sub: 'Cozinha', query: 'frigorífico bosch' },
@@ -974,61 +1026,105 @@ router.get('/cache-status', lightLimiter, (req, res) => {
     });
 });
 
-// GET /api/products/compare - Compara o MESMO produto em várias lojas portuguesas
-// Estratégia: 1 query Serper Shopping específica POR loja (`{produto} {loja}`) com
-// filtro estrito de título (100% dos tokens devem aparecer) para evitar variantes
-// diferentes serem confundidas com o produto correto.
+// GET /api/products/compare - Compara o MESMO produto em várias lojas portuguesas.
+// Estratégia (v3, baseada em productId do Google Shopping):
+//   1. 1 query Serper Shopping → devolve ofertas com productId (Google agrupa
+//      por GTIN internamente, então productId = mesma SKU canónica entre lojas).
+//   2. Encontrar o productId dominante - o que tem mais ofertas das lojas parceiras.
+//   3. Filtrar para ofertas desse productId + de lojas parceiras.
+//   4. Fallback (sem productId): per-store queries com match por título (v2).
+//   5. Validar URL real (não pode ser categoria/pesquisa) + URL contém modelo.
 router.get('/compare', heavyLimiter, async (req, res) => {
     const { q } = req.query;
 
     if (!SERPER_API_KEY) return res.status(500).json({ error: 'SERPER_API_KEY não configurada' });
     if (!q) return res.status(400).json({ error: 'Parâmetro "q" obrigatório' });
 
-    const cacheKey = `compare_v2_${q}`;
+    const cacheKey = `compare_v3_${q}`;
     const cachedData = getCached(cacheKey);
     if (cachedData) return res.json(cachedData);
 
     try {
         console.log(`[compare] A procurar preços para: ${q}`);
 
-        // Recusar queries demasiado genéricas - devolver vazio para o frontend mostrar aviso
         if (!isQuerySpecificEnough(q)) {
-            console.log(`[compare] Query "${q}" muito genérica (sem modelo nem marca). A devolver vazio.`);
+            console.log(`[compare] Query "${q}" muito genérica. A devolver vazio.`);
             const result = { shops: [] };
             setCache(cacheKey, result);
             return res.json(result);
         }
 
         const queryModel = extractModelIdentifier(q);
-        if (queryModel) console.log(`[compare] Model identifier detectado: ${queryModel}`);
+        if (queryModel) console.log(`[compare] Model identifier: ${queryModel}`);
 
-        // 1) Fetch ofertas das 4 lojas-alvo em paralelo, com query loja-específica
-        const offers = await Promise.all(
-            TARGET_STORES_FOR_COMPARE.map(s => fetchStoreOffer(q, s))
-        );
+        // === ESTRATÉGIA PRINCIPAL: productId ===
+        const allOffers = await fetchAllShoppingOffers(q);
+        console.log(`[compare] ${allOffers.length} ofertas retornadas, ${allOffers.filter(o => o.productId).length} com productId`);
 
-        // Log de quais lojas devolveram resultados vs quais falharam silenciosamente
-        TARGET_STORES_FOR_COMPARE.forEach((store, idx) => {
-            if (!offers[idx]) {
-                console.warn(`[compare] ${store.name}: nenhuma oferta encontrada para "${q}" (sem match ou erro Serper)`);
+        let shops = [];
+        let usedFallback = false;
+
+        const dominantPid = pickDominantProductId(allOffers, queryModel);
+
+        if (dominantPid) {
+            console.log(`[compare] productId dominante: ${dominantPid}`);
+            const matchingOffers = allOffers.filter(o =>
+                o.productId === dominantPid && isStoreVerified(o.source)
+            );
+
+            // Dedupe per store: manter só a oferta mais barata por loja
+            const bestPerStore = new Map();
+            for (const offer of matchingOffers) {
+                const price = parsePrice(offer.price);
+                if (price <= 0) continue;
+                const key = (offer.source || '').toLowerCase();
+                const existing = bestPerStore.get(key);
+                if (!existing || price < parsePrice(existing.price)) {
+                    bestPerStore.set(key, offer);
+                }
             }
-        });
 
-        const shops = [];
-        for (const offer of offers) {
-            if (!offer) continue;
-            const price = parsePrice(offer.price);
-            if (price <= 0) {
-                console.warn(`[compare] ${offer.source}: preço inválido "${offer.price}" para "${q}"`);
-                continue;
-            }
-            shops.push({
+            shops = Array.from(bestPerStore.values()).map(offer => ({
                 name: offer.source,
-                price: price.toFixed(2),
+                price: parsePrice(offer.price).toFixed(2),
                 offerTitle: offer.title,
                 link: getStoreDirectLink(offer.source, q, offer.link),
                 _resolvedUrl: null,
+            }));
+            console.log(`[compare] productId match deu ${shops.length} lojas`);
+        }
+
+        // === FALLBACK: nenhum productId ou productId match deu < 2 lojas ===
+        if (shops.length < 2) {
+            usedFallback = true;
+            console.log(`[compare] Fallback para per-store queries (${shops.length} via productId)`);
+            const existingStoreKeys = new Set(shops.map(s => (s.name || '').toLowerCase()));
+
+            const fallbackOffers = await Promise.all(
+                TARGET_STORES_FOR_COMPARE.map(s => fetchStoreOffer(q, s))
+            );
+
+            TARGET_STORES_FOR_COMPARE.forEach((store, idx) => {
+                if (!fallbackOffers[idx]) {
+                    console.warn(`[compare] ${store.name}: sem match para "${q}"`);
+                }
             });
+
+            for (const offer of fallbackOffers) {
+                if (!offer) continue;
+                const price = parsePrice(offer.price);
+                if (price <= 0) continue;
+                const storeKey = (offer.source || '').toLowerCase();
+                if (existingStoreKeys.has(storeKey)) continue; // já temos via productId
+                shops.push({
+                    name: offer.source,
+                    price: price.toFixed(2),
+                    offerTitle: offer.title,
+                    link: getStoreDirectLink(offer.source, q, offer.link),
+                    _resolvedUrl: null,
+                });
+                existingStoreKeys.add(storeKey);
+            }
         }
 
         // 2) Resolver URLs diretos via Serper Site Search em paralelo
@@ -1084,8 +1180,11 @@ router.get('/compare', heavyLimiter, async (req, res) => {
             }
         }));
 
-        // 4) Ordenar pela loja mais barata
+        // 5) Ordenar pela loja mais barata
         validShops.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+
+        const strategy = usedFallback ? 'productId+fallback' : (dominantPid ? 'productId' : 'fallback');
+        console.log(`[compare] ✅ "${q}" → ${validShops.length} lojas válidas (estratégia: ${strategy})`);
 
         const result = { shops: validShops };
 
