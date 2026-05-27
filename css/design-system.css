@@ -555,6 +555,7 @@ a:hover { color: var(--es-primary); }
     background: rgba(0,0,0,.4);
     z-index: 1040;
     opacity: 0;
+    pointer-events: none; /* sem isto, intercepta cliques mesmo invisível */
     transition: opacity .25s ease;
 }
 body.es-mobile-nav-active .es-mobile-nav {
@@ -562,6 +563,7 @@ body.es-mobile-nav-active .es-mobile-nav {
 }
 body.es-mobile-nav-active .es-mobile-nav-backdrop {
     opacity: 1;
+    pointer-events: auto;
 }
 body.es-mobile-nav-active {
     overflow: hidden;

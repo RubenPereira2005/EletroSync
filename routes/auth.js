@@ -72,11 +72,17 @@ router.post('/forgot-password', async (req, res) => {
     const redirectTo = process.env.PASSWORD_RESET_REDIRECT
         || `${req.protocol}://${req.get('host')}/reset-password.html`;
 
+    console.log(`[auth] forgot-password pedido para ${email}, redirectTo=${redirectTo}`);
+
     try {
-        await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+        if (error) {
+            console.error('[auth] resetPasswordForEmail devolveu erro:', error.message, error.status);
+        } else {
+            console.log(`[auth] resetPasswordForEmail OK para ${email}`);
+        }
     } catch (e) {
-        // Não vazar detalhes - mas registar no log para debug
-        console.error('[auth] forgot-password erro:', e.message);
+        console.error('[auth] forgot-password exceção:', e.message);
     }
 
     return res.json({ message: 'Se este email estiver registado, vais receber um link para recuperar a palavra-passe.' });
