@@ -298,4 +298,16 @@ async function fetchLivePrice(storeName, productUrl) {
     }
 }
 
-module.exports = { resolveProductUrl, fetchLivePrice };
+// Verifica se uma URL é uma página de produto real numa das lojas parceiras.
+// Útil para filtrar resultados Serper sem custo extra: se a Serper devolveu
+// um link que NÃO bate com o padrão de produto (ex: página de categoria,
+// pesquisa, blog), descartamos antes de mostrar ao utilizador.
+function isVerifiedProductUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    for (const store of Object.values(STORES)) {
+        try { if (store.isProductUrl(url)) return true; } catch {}
+    }
+    return false;
+}
+
+module.exports = { resolveProductUrl, fetchLivePrice, isVerifiedProductUrl };

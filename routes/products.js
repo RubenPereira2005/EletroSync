@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
-const { resolveProductUrl, fetchLivePrice } = require('./store-scraper');
+const { resolveProductUrl, fetchLivePrice, isVerifiedProductUrl } = require('./store-scraper');
 
 // =============================================================================
 // RATE LIMITING - protege contra abuso e esgotamento de créditos Serper
@@ -529,6 +529,23 @@ function extractDirectFromGoogleRedirect(link) {
     return null;
 }
 
+// Para um item Serper Shopping, devolve a URL real do produto na loja (se
+// existir), ou null. Trata casos de redirect Google e links diretos.
+function getDirectStoreUrl(item) {
+    const raw = item && item.link;
+    if (!raw) return null;
+    if (!isGoogleLink(raw)) return raw;
+    return extractDirectFromGoogleRedirect(raw);
+}
+
+// True se o item tem link verificável que aponta para página de produto numa loja
+// parceira. Filtra itens que não conseguimos confirmar (links de pesquisa,
+// categoria, Google Shopping product, etc.).
+function isItemConfirmedInPartnerStore(item) {
+    const url = getDirectStoreUrl(item);
+    return isVerifiedProductUrl(url);
+}
+
 // Valida que uma string é uma URL bem formada com http/https. Defesa contra
 // dados malformados vindos do Serper que pudessem injetar javascript: ou similar.
 function isSafeUrl(url) {
@@ -691,6 +708,8 @@ router.get('/search', heavyLimiter, async (req, res) => {
         const products = (data.shopping || [])
             .filter(item => isStoreVerified(item.source))
             .filter(item => isQuerySpecificEnough(item.title || ''))
+            // Só manter produtos com link verificado em loja parceira
+            .filter(item => isItemConfirmedInPartnerStore(item))
             .map(item => normalizeProduct(item, cat));
 
         const result = { products, total: products.length, query: q };
@@ -715,6 +734,7 @@ let allProductsInFlight = null;
 async function fetchAllProductsCatalog() {
     console.log(`[Serper] A carregar todo o catálogo base... (A executar ${CATEGORY_QUERIES.length} pesquisas em paralelo)`);
     const allProducts = [];
+    const stats = { totalRaw: 0, droppedSource: 0, droppedGeneric: 0, droppedUnverified: 0, kept: 0 };
 
     const fetchPromises = CATEGORY_QUERIES.map(async (qObj) => {
         try {
@@ -727,12 +747,29 @@ async function fetchAllProductsCatalog() {
             if (!response.ok) return [];
 
             const data = await response.json();
-            return (data.shopping || [])
-                .filter(item => isStoreVerified(item.source))
-                // FILTRO CRÍTICO: descartar produtos com títulos demasiado genéricos
+            const raw = data.shopping || [];
+            stats.totalRaw += raw.length;
+
+            return raw
+                .filter(item => {
+                    if (!isStoreVerified(item.source)) { stats.droppedSource++; return false; }
+                    return true;
+                })
+                // FILTRO CRÍTICO 1: descartar produtos com títulos demasiado genéricos
                 // (ex: "Asus Portátil") - cada loja devolveria um modelo diferente
                 // e a comparação ficaria errada.
-                .filter(item => isQuerySpecificEnough(item.title || ''))
+                .filter(item => {
+                    if (!isQuerySpecificEnough(item.title || '')) { stats.droppedGeneric++; return false; }
+                    return true;
+                })
+                // FILTRO CRÍTICO 2: só manter produtos cujo link é uma página de
+                // produto REAL numa loja parceira (não pesquisa/categoria/Google).
+                // Garante que o user nunca vê produtos "não confirmados".
+                .filter(item => {
+                    if (!isItemConfirmedInPartnerStore(item)) { stats.droppedUnverified++; return false; }
+                    stats.kept++;
+                    return true;
+                })
                 .map(item => {
                     item.assignedSubcategory = qObj.sub;
                     return normalizeProduct(item, qObj.cat);
@@ -744,6 +781,9 @@ async function fetchAllProductsCatalog() {
 
     const results = await Promise.all(fetchPromises);
     results.forEach(items => allProducts.push(...items));
+
+    console.log(`[Serper] Filtros aplicados: ${stats.totalRaw} resultados raw → ${stats.kept} produtos confirmados ` +
+        `(descartados: ${stats.droppedSource} sem loja parceira, ${stats.droppedGeneric} título genérico, ${stats.droppedUnverified} URL não confirmado)`);
 
     // Deduplicar por título normalizado
     const seen = new Set();
