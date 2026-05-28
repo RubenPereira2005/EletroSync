@@ -15,6 +15,7 @@ const path = require('path');
 
 const SERPER_API_KEY = process.env.SERPER_API_KEY;
 const SERPER_SEARCH_URL = 'https://google.serper.dev/search';
+const SCRAPERAPI_KEY = process.env.SCRAPERAPI_KEY;
 
 // Cache persistente em disco com TTL adaptativo:
 //   - URLs (chave sem prefixo): 7 dias - raramente mudam
@@ -218,30 +219,62 @@ async function resolveProductUrl(storeName, query) {
 // =============================================================================
 // EXTRAÇÃO DE PREÇO REAL DA PÁGINA DA LOJA
 // =============================================================================
-// Para Worten e Rádio Popular conseguimos fetchar a página HTML e extrair o
-// preço atualizado do JSON-LD ou meta-tags. Para FNAC e PCDiga estão bloqueados
-// por Cloudflare/anti-bot, devolvemos null.
+// Se tivermos a ScraperAPI_KEY configurada, conseguimos contornar a proteção
+// de Cloudflare / anti-bot para Worten, FNAC e PCDiga fazendo o fetch das páginas
+// através da ScraperAPI. Sem ela, apenas a Rádio Popular funciona por fetch direto.
 
 const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-const PRICE_TIMEOUT_MS = 5000;
+
+// Determina se a loja é suportada para live scraping de preços
+function isPriceFetchSupported(storeKey) {
+    if (SCRAPERAPI_KEY) {
+        // Com ScraperAPI, suportamos todas as lojas configuradas
+        return storeKey && STORES[storeKey] !== undefined;
+    }
+    // Sem ScraperAPI, apenas a Rádio Popular aceita ligação direta sem Cloudflare
+    return storeKey === 'radio popular';
+}
 
 async function fetchHtml(url) {
+    const hasScraperApi = !!SCRAPERAPI_KEY;
+    // ScraperAPI pode demorar a rodar os proxies residenciais, aumentamos para 60s.
+    const timeoutMs = hasScraperApi ? 60000 : 5000;
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), PRICE_TIMEOUT_MS);
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+
+    let fetchUrl = url;
+    if (hasScraperApi) {
+        // Se for a FNAC, usamos proxies residenciais europeus (premium=true & country_code=eu)
+        // para contornar o bloqueio da Cloudflare de forma muito mais fiável e rápida.
+        const isFnac = url.includes('fnac.pt');
+        const extraParams = isFnac ? '&premium=true&country_code=eu' : '';
+        fetchUrl = `http://api.scraperapi.com/?api_key=${encodeURIComponent(SCRAPERAPI_KEY)}&url=${encodeURIComponent(url)}${extraParams}`;
+        console.log(`[live-price] A carregar via ScraperAPI (Params: ${extraParams || 'standard'}): ${url}`);
+    } else {
+        console.log(`[live-price] A carregar diretamente: ${url}`);
+    }
+
     try {
-        const res = await fetch(url, {
-            headers: {
-                'User-Agent': USER_AGENT,
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'pt-PT,pt;q=0.9,en;q=0.8',
-                'Upgrade-Insecure-Requests': '1',
-            },
+        // Com ScraperAPI limpamos os headers para deixar o proxy gerir o user-agent
+        const headers = hasScraperApi ? {} : {
+            'User-Agent': USER_AGENT,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'pt-PT,pt;q=0.9,en;q=0.8',
+            'Upgrade-Insecure-Requests': '1',
+        };
+
+        const res = await fetch(fetchUrl, {
+            headers,
             signal: ctrl.signal,
             redirect: 'follow',
         });
-        if (!res.ok) return null;
+        if (!res.ok) {
+            console.error(`[live-price] Falha no fetch (HTTP ${res.status}): ${url}`);
+            return null;
+        }
         return await res.text();
-    } catch {
+    } catch (err) {
+        console.error(`[live-price] Erro no fetch / timeout: ${err.message} para ${url}`);
         return null;
     } finally {
         clearTimeout(timer);
@@ -250,6 +283,15 @@ async function fetchHtml(url) {
 
 function extractPriceFromHtml(html) {
     if (!html) return null;
+
+    // Tentativa 0: meta itemprop="price" content="VALUE" (evita apanhar divs de produtos recomendados)
+    const mMeta = html.match(/<meta[^>]+itemprop=["']price["'][^>]+content=["']([0-9.,]+)/i)
+               || html.match(/<meta[^>]+content=["']([0-9.,]+)["'][^>]+itemprop=["']price["']/i);
+    if (mMeta) {
+        const n = parseFloat(mMeta[1].replace(',', '.'));
+        if (!isNaN(n) && n > 1) return n;
+    }
+
     // Tentativa 1: JSON-LD com Product schema: "price":"VALUE" ou "price":VALUE
     const m1 = html.match(/"price"\s*:\s*"?([0-9]+(?:[.,][0-9]{1,2})?)"?/);
     if (m1) {
@@ -271,30 +313,121 @@ function extractPriceFromHtml(html) {
     return null;
 }
 
-// Lojas que ainda permitem fetch HTML direto (sem Cloudflare ou anti-bot):
-// - Worten, FNAC, PCDiga estão atrás de Cloudflare → bloqueiam server-side fetch
-// - Rádio Popular ainda permite acesso direto
-const PRICE_FETCH_SUPPORTED = new Set(['radio popular']);
+function getCleanProductHtml(html) {
+    if (!html) return '';
+    let clean = html;
+    
+    // Remove tudo antes do fim do header se existir
+    const headerEnd = clean.toLowerCase().indexOf('</header>');
+    if (headerEnd !== -1) {
+        clean = clean.slice(headerEnd);
+    }
+    
+    // Remove tudo após o início do footer se existir
+    const footerStart = clean.toLowerCase().indexOf('<footer');
+    if (footerStart !== -1) {
+        clean = clean.slice(0, footerStart);
+    }
+    
+    // Remover scripts e styles para evitar falsos positivos de scripts de analytics ou CSS
+    clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    clean = clean.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+    
+    return clean;
+}
+
+function checkAvailabilityFromHtml(storeKey, html) {
+    if (!html) return true;
+
+    // 1. Limpar o HTML para focar apenas na área de produto (excluindo header, footer e scripts)
+    const cleanHtml = getCleanProductHtml(html);
+    const htmlLower = cleanHtml.toLowerCase();
+
+    // 2. Confirmação Positiva do Botão de Compra (Evita falsos positivos de stock explicativos ou rodapés)
+    if (storeKey === 'radio popular' && htmlLower.includes('adicionar ao carrinho')) {
+        return true;
+    }
+    if (storeKey === 'worten' && htmlLower.includes('adicionar ao carrinho')) {
+        return true;
+    }
+    if (storeKey === 'fnac' && htmlLower.includes('adicionar ao cesto')) {
+        return true;
+    }
+
+    // 3. Verificação Standard Schema.org OutOfStock
+    if (/schema\.org\/OutOfStock/i.test(htmlLower) || /schema\.org\/OutOfStore/i.test(htmlLower)) {
+        return false;
+    }
+
+    // 4. Verificação de tags específicas do Open Graph de stock
+    if (/<meta[^>]+property=["']og:availability["'][^>]+content=["'](instock|oos|out of stock|esgotado|indisponivel)["']/i.test(cleanHtml)) {
+        const match = cleanHtml.match(/<meta[^>]+property=["']og:availability["'][^>]+content=["']([^"']+)["']/i);
+        if (match) {
+            const status = match[1].toLowerCase();
+            if (status.includes('out') || status.includes('oos') || status.includes('esgotado') || status.includes('indisponivel')) {
+                return false;
+            }
+        }
+    }
+
+    // 5. Fallbacks textuais específicos para cada loja na secção limpa
+    if (storeKey === 'fnac') {
+        if (htmlLower.includes('produto indisponível') || 
+            htmlLower.includes('indisponível online') || 
+            htmlLower.includes('esgotado temporariamente') ||
+            htmlLower.includes('este produto já não se encontra disponível') ||
+            htmlLower.includes('indisponivel online')) {
+            return false;
+        }
+    } else if (storeKey === 'worten') {
+        if (htmlLower.includes('sem stock') || 
+            htmlLower.includes('indisponível para entrega') || 
+            htmlLower.includes('temporariamente indisponível') ||
+            htmlLower.includes('indisponivel para entrega') ||
+            htmlLower.includes('temporariamente indisponivel')) {
+            return false;
+        }
+    } else if (storeKey === 'pc diga') {
+        if (htmlLower.includes('esgotado') || 
+            htmlLower.includes('sem stock') || 
+            htmlLower.includes('artigo indisponível') ||
+            htmlLower.includes('artigo indisponivel')) {
+            return false;
+        }
+    } else if (storeKey === 'radio popular') {
+        if (htmlLower.includes('produto indisponível') || 
+            htmlLower.includes('produto indisponivel') || 
+            htmlLower.includes('artigo indisponível') ||
+            htmlLower.includes('sem stock') ||
+            htmlLower.includes('temporariamente indisponível')) {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 async function fetchLivePrice(storeName, productUrl) {
-    if (!storeName || !productUrl) return null;
+    if (!storeName || !productUrl) return { price: null, available: true };
     const key = resolveStoreKey(storeName);
-    if (!key || !PRICE_FETCH_SUPPORTED.has(key)) return null;
+    if (!key || !isPriceFetchSupported(key)) return { price: null, available: true };
 
-    const cacheKey = `price::${productUrl}`;
+    const cacheKey = `price_v2::${productUrl}`;
     const cached = getCached(cacheKey);
     if (cached !== null) return cached;
 
     try {
         const html = await fetchHtml(productUrl);
         const price = extractPriceFromHtml(html);
+        const available = checkAvailabilityFromHtml(key, html);
+        const result = { price, available };
         if (price !== null) {
-            setCache(cacheKey, price);
+            setCache(cacheKey, result);
         }
-        return price;
+        return result;
     } catch (e) {
         console.error(`[live-price] ${storeName} → ${e.message}`);
-        return null;
+        return { price: null, available: true };
     }
 }
 

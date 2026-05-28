@@ -1520,3 +1520,14 @@ header .row.border-bottom {
 .heart-beat {
     animation: heartBeat 0.3s ease-in-out;
 }
+
+/* --- Price Flash Animation (WOW effect on live price updates) --- */
+@keyframes priceUpdateFlash {
+    0% { background-color: transparent; }
+    25% { background-color: #d1fae5; } /* verde esmeralda muito suave */
+    75% { background-color: #d1fae5; }
+    100% { background-color: transparent; }
+}
+.price-update-flash {
+    animation: priceUpdateFlash 1.8s ease;
+}

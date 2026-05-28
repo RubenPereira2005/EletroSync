@@ -359,14 +359,36 @@ function titleMatchesQuery(title, query) {
     return true;
 }
 
-// Verifica se um URL contém referência ao model identifier (no path/slug).
-function urlMatchesModel(url, modelId) {
-    if (!modelId) return true;
+// Verifica se um URL contém referência ao model identifier (no path/slug)
+// e se bate com variantes críticas (Pro, Plus, Max, Lite, Ultra).
+function urlMatchesModel(url, modelId, query = '') {
     if (!url) return false;
-    // Normaliza: remove hifens e underscores para comparar (KAD-93-AIDP === KAD93AIDP)
-    const cleanUrl = String(url).toLowerCase().replace(/[-_]/g, '');
-    const cleanModel = String(modelId).toLowerCase().replace(/[-_]/g, '');
-    return cleanUrl.includes(cleanModel);
+
+    // 1. Verificação básica do modelo (se existir)
+    if (modelId) {
+        const cleanUrl = String(url).toLowerCase().replace(/[-_]/g, '');
+        const cleanModel = String(modelId).toLowerCase().replace(/[-_]/g, '');
+        if (!cleanUrl.includes(cleanModel)) return false;
+    }
+
+    // 2. Verificação de sub-marca/variante crítica (Pro, Plus, Max, Lite, Ultra)
+    // Se o utilizador pediu explicitamente uma destas variantes, o URL do produto
+    // deve fazer menção a ela no slug (evita mandar para o "normal" em vez do "pro").
+    const criticalVariants = ['pro', 'plus', 'max', 'lite', 'ultra'];
+    const queryLower = String(query).toLowerCase();
+    const urlLower = String(url).toLowerCase();
+
+    for (const variant of criticalVariants) {
+        const variantRegex = new RegExp('\\b' + variant + '\\b', 'i');
+        if (variantRegex.test(queryLower)) {
+            // A query pede a variante. O URL também deve contê-la
+            if (!urlLower.includes(variant)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 // Marcas conhecidas (case-insensitive, normalizadas)
@@ -672,7 +694,7 @@ function getStoreDirectLink(storeName, productName, googleLink) {
 
 function normalizeProduct(item, category) {
     const priceRaw = item.price || '0';
-    const priceNum = parseFloat(priceRaw.replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
+    const priceNum = parsePrice(priceRaw);
 
     const storeName = item.source || 'Loja Online';
 
@@ -689,7 +711,7 @@ function normalizeProduct(item, category) {
 
     // 1. Tentar ler oldPrice diretamente (se a API alguma vez fornecer)
     if (item.oldPrice) {
-        const oldRaw = parseFloat(item.oldPrice.replace(/[^0-9.,]/g, '').replace(',', '.'));
+        const oldRaw = parsePrice(item.oldPrice);
         if (oldRaw > priceNum) {
             hasDiscount = true;
             oldPrice = oldRaw;
@@ -1035,14 +1057,23 @@ router.get('/cache-status', lightLimiter, (req, res) => {
 //   4. Fallback (sem productId): per-store queries com match por título (v2).
 //   5. Validar URL real (não pode ser categoria/pesquisa) + URL contém modelo.
 router.get('/compare', heavyLimiter, async (req, res) => {
-    const { q } = req.query;
+    const { q, fast } = req.query;
 
     if (!SERPER_API_KEY) return res.status(500).json({ error: 'SERPER_API_KEY não configurada' });
     if (!q) return res.status(400).json({ error: 'Parâmetro "q" obrigatório' });
 
     const cacheKey = `compare_v3_${q}`;
+    const fastCacheKey = `compare_fast_v3_${q}`;
+
+    // A cache completa (compare_v3) serve para ambos os pedidos (fast ou normal)
     const cachedData = getCached(cacheKey);
     if (cachedData) return res.json(cachedData);
+
+    // Se for um pedido rápido e tivermos cache rápida, devolvemos imediatamente
+    if (fast === 'true') {
+        const cachedFastData = getCached(fastCacheKey);
+        if (cachedFastData) return res.json(cachedFastData);
+    }
 
     try {
         console.log(`[compare] A procurar preços para: ${q}`);
@@ -1089,6 +1120,7 @@ router.get('/compare', heavyLimiter, async (req, res) => {
                 price: parsePrice(offer.price).toFixed(2),
                 offerTitle: offer.title,
                 link: getStoreDirectLink(offer.source, q, offer.link),
+                available: true,
                 _resolvedUrl: null,
             }));
             console.log(`[compare] productId match deu ${shops.length} lojas`);
@@ -1121,6 +1153,7 @@ router.get('/compare', heavyLimiter, async (req, res) => {
                     price: price.toFixed(2),
                     offerTitle: offer.title,
                     link: getStoreDirectLink(offer.source, q, offer.link),
+                    available: true,
                     _resolvedUrl: null,
                 });
                 existingStoreKeys.add(storeKey);
@@ -1150,8 +1183,8 @@ router.get('/compare', heavyLimiter, async (req, res) => {
                 continue;
             }
 
-            if (queryModel && !urlMatchesModel(url, queryModel)) {
-                console.log(`[compare] Descartado ${shop.name}: URL ${url} não bate com modelo ${queryModel}`);
+            if (!urlMatchesModel(url, queryModel, q)) {
+                console.log(`[compare] Descartado ${shop.name}: URL ${url} não bate com modelo/variante de "${q}"`);
                 continue;
             }
 
@@ -1165,36 +1198,64 @@ router.get('/compare', heavyLimiter, async (req, res) => {
         // 4) Para lojas que permitem (Worten, Radio Popular), buscar preço REAL
         //    na própria página da loja e sobrepor o preço do Serper (que pode ter atraso).
         //    FNAC e PCDiga estão bloqueados por anti-bot, mantemos o preço do Serper.
-        await Promise.all(validShops.map(async (shop) => {
-            try {
-                const livePrice = await fetchLivePrice(shop.name, shop.link);
-                if (livePrice !== null && livePrice > 0) {
-                    const oldPrice = shop.price;
-                    shop.price = livePrice.toFixed(2);
-                    if (oldPrice !== shop.price) {
-                        console.log(`[compare] ${shop.name}: preço atualizado ${oldPrice}€ → ${shop.price}€ (página da loja)`);
+        if (fast !== 'true') {
+            await Promise.all(validShops.map(async (shop) => {
+                try {
+                    const result = await fetchLivePrice(shop.name, shop.link);
+                    if (result) {
+                        if (result.price !== null && parseFloat(result.price) > 0) {
+                            const oldPrice = shop.price;
+                            shop.price = parseFloat(result.price).toFixed(2);
+                            if (oldPrice !== shop.price) {
+                                console.log(`[compare] ${shop.name}: preço atualizado ${oldPrice}€ → ${shop.price}€ (página da loja)`);
+                            }
+                        }
+                        shop.available = result.available;
                     }
+                } catch (e) {
+                    // mantém preço do Serper
                 }
-            } catch (e) {
-                // mantém preço do Serper
-            }
-        }));
+            }));
+        }
 
         // 5) Ordenar pela loja mais barata
         validShops.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
 
         const strategy = usedFallback ? 'productId+fallback' : (dominantPid ? 'productId' : 'fallback');
-        console.log(`[compare] ✅ "${q}" → ${validShops.length} lojas válidas (estratégia: ${strategy})`);
+        console.log(`[compare] ✅ "${q}" → ${validShops.length} lojas válidas (estratégia: ${strategy}${fast === 'true' ? ' [FAST]' : ''})`);
 
         const result = { shops: validShops };
 
         if (validShops.length > 0) {
-            setCache(cacheKey, result);
+            if (fast === 'true') {
+                setCache(fastCacheKey, result);
+            } else {
+                setCache(cacheKey, result);
+            }
         }
 
         return res.json(result);
     } catch (err) {
         return res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/products/live-price - Busca o preço real/live de um link específico de uma loja
+router.get('/live-price', lightLimiter, async (req, res) => {
+    const { store, link } = req.query;
+    if (!store || !link) {
+        return res.status(400).json({ error: 'Parâmetros "store" e "link" obrigatórios' });
+    }
+    try {
+        const result = await fetchLivePrice(store, link); // result will be { price, available }
+        return res.json({ 
+            store, 
+            price: result && result.price !== null && parseFloat(result.price) > 0 ? parseFloat(result.price).toFixed(2) : null,
+            available: result ? result.available : true
+        });
+    } catch (e) {
+        console.error(`[api-live-price] Erro ao buscar preço live para ${store}:`, e.message);
+        return res.json({ store, price: null, available: true });
     }
 });
 

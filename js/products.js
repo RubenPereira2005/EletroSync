@@ -125,8 +125,31 @@ function emptyStateHtml(opts = {}) {
     `;
 }
 
+// Apenas preservar paginação e tab ativa se vier de single-product.html (Back ou Breadcrumb)
+const cameFromDetail = document.referrer.includes('single-product.html');
+if (!cameFromDetail) {
+    try {
+        sessionStorage.removeItem('eletrosync_pagination_state');
+        sessionStorage.removeItem('eletrosync_active_tab');
+    } catch (e) {}
+}
+
 // Estado de paginação por container (ex: { 'grid-all': 1, 'grid-gaming': 2 })
-const paginationState = {};
+const paginationState = (() => {
+    try {
+        const stored = sessionStorage.getItem('eletrosync_pagination_state');
+        return stored ? JSON.parse(stored) : {};
+    } catch (e) {
+        return {};
+    }
+})();
+
+function savePaginationState() {
+    try {
+        sessionStorage.setItem('eletrosync_pagination_state', JSON.stringify(paginationState));
+    } catch (e) {}
+}
+
 const PAGE_SIZE = 16;
 
 function renderPagination(containerId, totalItems) {
@@ -226,6 +249,7 @@ document.addEventListener('click', function (e) {
     if (!pagEl) return;
     const containerId = pagEl.id.replace('pagination-', '');
     paginationState[containerId] = page;
+    savePaginationState();
 
     // Re-renderizar com a página nova - usar a lista atual filtrada
     // (chamamos applyAllFilters que já tem a lógica completa)
@@ -240,6 +264,7 @@ document.addEventListener('click', function (e) {
 // Sempre que se mudam filtros (sort, store, categoria), voltar à página 1
 function resetPagination(containerId) {
     paginationState[containerId] = 1;
+    savePaginationState();
 }
 
 function initSwiper() {
@@ -400,6 +425,7 @@ function sortProducts(list) {
 // para uma página vazia quando o conjunto filtrado é menor que a página atual).
 function resetAllPagination() {
     Object.keys(paginationState).forEach(k => { paginationState[k] = 1; });
+    savePaginationState();
 }
 document.querySelectorAll('.store-filter').forEach(cb => cb.addEventListener('change', () => { resetAllPagination(); applyAllFilters(); }));
 const priceInput = document.getElementById('filter-price') || document.querySelector('.form-range');
@@ -528,8 +554,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 2. Pegamos os parâmetros da URL
     const urlParams = new URLSearchParams(window.location.search);
     const searchQuery = urlParams.get('query');
-    const catAlvo = urlParams.get('cat');
+    let catAlvo = urlParams.get('cat');
     const subAlvo = urlParams.get('sub');
+
+    // Se não há categoria na URL nem pesquisa ativa, mas temos uma tab guardada, restauramos
+    if (!catAlvo && !searchQuery) {
+        try {
+            const savedTab = sessionStorage.getItem('eletrosync_active_tab');
+            if (savedTab) catAlvo = savedTab;
+        } catch (e) {}
+    }
 
     // --- PRIORIDADE 1: PESQUISA ---
     if (searchQuery) {
@@ -599,6 +633,11 @@ document.querySelectorAll("#nav-tab .nav-link").forEach(tab => {
   tab.addEventListener("shown.bs.tab", (event) => {
     // Pegar o ID da categoria destino (ex: nav-gaming -> gaming)
     const targetId = event.target.getAttribute('data-bs-target').replace('#nav-', '');
+
+    // Guardar a tab ativa no sessionStorage
+    try {
+        sessionStorage.setItem('eletrosync_active_tab', targetId);
+    } catch (e) {}
 
     // 0. Atualizar breadcrumb
     updateBreadcrumbAndTitle({ category: targetId === 'all' ? null : targetId });

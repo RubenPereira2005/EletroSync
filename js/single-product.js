@@ -73,9 +73,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // ── Tabela de comparação ────────────────────────────────────────────────
+    let currentShops = [];
+    const verifyingStores = new Set();
+    const storeStatus = new Map();
+    let justUpdatedStore = null;
+
+    function sortShops(shopsList) {
+        return shopsList.slice().sort((a, b) => {
+            const aAvail = a.available !== false;
+            const bAvail = b.available !== false;
+            if (aAvail !== bAvail) {
+                return aAvail ? -1 : 1; // em stock primeiro
+            }
+            return parseFloat(a.price) - parseFloat(b.price); // depois por preço
+        });
+    }
+
     function renderComparisonTable(shopsList) {
-        // Ordenar lojas por preço e determinar o melhor preço
-        const sortedShops = shopsList.slice().sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+        // Ordenar lojas usando a nossa ordenação customizada (stock primeiro, depois preço)
+        const sortedShops = sortShops(shopsList);
         const bestPrice = sortedShops.length ? parseFloat(sortedShops[0].price) : 0;
         const worstPrice = sortedShops.length ? parseFloat(sortedShops[sortedShops.length - 1].price) : 0;
 
@@ -107,8 +123,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         const container = document.getElementById('shopsComparison');
 
         // Para detetar variantes diferentes entre lojas, normalizamos os títulos.
-        // Se os títulos diferem significativamente, mostramos o título de cada loja
-        // para o user perceber porque os preços podem variar.
         function normalizeTitle(t) {
             return String(t || '').toLowerCase()
                 .normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -120,48 +134,120 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         container.innerHTML = sortedShops.map((shop, index) => {
             const colors = STORE_COLORS[shop.name] || { dot: '#666' };
-            const isBest = index === 0;
+            const isBest = index === 0 && shop.available !== false;
             const bestBadge = isBest
                 ? '<span class="es-badge es-badge-success ms-2"><i class="fa-solid fa-trophy"></i> Melhor preço</span>'
                 : '';
             const titleHint = (titlesDiffer && shop.offerTitle)
                 ? `<div class="text-muted small mt-1" style="font-size: 11px; line-height: 1.3;" title="Título exato anunciado pela loja">${escapeHtml(shop.offerTitle).slice(0, 90)}</div>`
                 : '';
+            
+            // Determinar o ícone de status
+            const status = storeStatus.get(shop.name) || 'verifying';
+            let statusHtml = '';
+            if (status === 'verifying') {
+                statusHtml = `<span class="verification-status ms-2" style="cursor:help;" title="A confirmar preço em tempo real com o site da loja..."><i class="fa-solid fa-circle-notch fa-spin text-muted" style="font-size: 0.85em;"></i></span>`;
+            } else if (status === 'updated') {
+                statusHtml = `<span class="verification-status ms-2" style="cursor:help;" title="Preço atualizado em tempo real!"><i class="fa-solid fa-circle-check text-success" style="font-size: 0.9em;"></i></span>`;
+            } else if (status === 'verified') {
+                statusHtml = `<span class="verification-status ms-2" style="cursor:help;" title="Preço confirmado em tempo real"><i class="fa-solid fa-circle-check text-success" style="font-size: 0.9em; opacity: 0.85;"></i></span>`;
+            } else if (status === 'fallback') {
+                statusHtml = `<span class="verification-status ms-2" style="cursor:help;" title="Não foi possível verificar o preço em tempo real (preço de referência)"><i class="fa-solid fa-circle-xmark" style="font-size: 0.9em; color: #d97706;"></i></span>`;
+            }
+
+            const shouldFlash = (justUpdatedStore === shop.name);
+            const isOutOfStock = shop.available === false;
+            const availabilityHtml = isOutOfStock
+                ? `<span class="availability-out" style="color: var(--es-danger); font-weight: 500;"><i class="fa-solid fa-circle-xmark"></i> Sem stock</span>`
+                : `<span class="availability-ok"><i class="fa-solid fa-circle-check"></i> Em stock</span>`;
+            
+            const priceStyle = isOutOfStock ? 'text-decoration: line-through; opacity: 0.5;' : '';
+
             return `
-                <tr class="${isBest ? 'best-row' : ''}">
+                <tr class="${isBest ? 'best-row' : ''} ${shouldFlash ? 'price-update-flash' : ''} ${isOutOfStock ? 'out-of-stock-row' : ''}" data-store="${shop.name}">
                     <td>
                         <div class="store-cell">
                             <span class="store-dot" style="background:${colors.dot}"></span>
-                            <span>${shop.name}</span>
+                            <span style="${isOutOfStock ? 'opacity: 0.6;' : ''}">${shop.name}</span>
                             ${bestBadge}
                         </div>
                         ${titleHint}
                     </td>
-                    <td><span class="availability-ok"><i class="fa-solid fa-circle-check"></i>Em stock</span></td>
-                    <td><span class="price-cell">${parseFloat(shop.price).toFixed(2)}€</span></td>
+                    <td>${availabilityHtml}</td>
+                    <td><span class="price-cell" style="font-weight: 600; ${priceStyle}">${parseFloat(shop.price).toFixed(2)}€${statusHtml}</span></td>
                     <td class="text-end">
-                        <a href="${shop.link || '#'}" target="_blank" rel="noopener noreferrer" class="es-btn ${isBest ? 'es-btn-primary' : 'es-btn-outline'} es-btn-sm">
+                        <a href="${shop.link || '#'}" target="_blank" rel="noopener noreferrer" class="es-btn ${isBest ? 'es-btn-primary' : 'es-btn-outline'} es-btn-sm ${isOutOfStock ? 'es-btn-disabled' : ''}" style="${isOutOfStock ? 'opacity: 0.5;' : ''}">
                             Ir à loja <i class="fa-solid fa-arrow-up-right-from-square"></i>
                         </a>
                     </td>
                 </tr>
             `;
         }).join('');
-
     }
 
     function escapeHtml(s) {
         return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    // Mostrar loading (NÃO renderizar a oferta original - pode ter preço impreciso
-    // da agregação Serper Shopping; esperamos pelas ofertas validadas do /compare)
+    function updateBannerStatus() {
+        const bannerText = document.getElementById('bannerText');
+        const bannerSpinner = document.getElementById('bannerSpinner');
+        const bannerBadge = document.getElementById('bannerBadge');
+        const statusBanner = document.getElementById('livePriceStatusBanner');
+        const legendVerifyingItem = document.getElementById('legendVerifyingItem');
+
+        if (verifyingStores.size > 0) {
+            if (bannerText) bannerText.textContent = `A confirmar preços reais em tempo real com as lojas (${verifyingStores.size} restantes)...`;
+            if (legendVerifyingItem) {
+                legendVerifyingItem.classList.remove('d-none');
+                legendVerifyingItem.classList.add('d-flex');
+            }
+        } else {
+            // Todos concluídos!
+            if (legendVerifyingItem) {
+                legendVerifyingItem.classList.remove('d-flex');
+                legendVerifyingItem.classList.add('d-none');
+            }
+            if (bannerSpinner) {
+                bannerSpinner.className = 'fa-solid fa-circle-check text-success';
+                bannerSpinner.style.animation = 'none';
+            }
+            if (bannerText) {
+                bannerText.textContent = 'Preços reais verificados em tempo real com as lojas oficiais.';
+            }
+            if (bannerBadge) {
+                bannerBadge.textContent = 'CONFIRMADO';
+                bannerBadge.className = 'badge bg-success text-white px-2 py-1';
+            }
+            // Fade out e colapso total suave
+            setTimeout(() => {
+                if (statusBanner) {
+                    statusBanner.style.transition = 'all 1s ease-in-out';
+                    // Remover classes Bootstrap que impedem colapso suave por terem !important
+                    statusBanner.classList.remove('d-flex', 'mb-3');
+                    statusBanner.style.opacity = '0';
+                    statusBanner.style.height = '0';
+                    statusBanner.style.paddingTop = '0';
+                    statusBanner.style.paddingBottom = '0';
+                    statusBanner.style.marginTop = '0';
+                    statusBanner.style.marginBottom = '0';
+                    statusBanner.style.overflow = 'hidden';
+                    statusBanner.style.borderWidth = '0';
+                    setTimeout(() => {
+                        statusBanner.classList.add('d-none');
+                    }, 1000);
+                }
+            }, 4000);
+        }
+    }
+
+    // Mostrar loading inicial
     const container = document.getElementById('shopsComparison');
     container.innerHTML = `
         <tr id="loading-row">
             <td colspan="4" class="text-center py-5 text-muted">
                 <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.25rem;"></i>
-                <div class="mt-2">A confirmar preços nas lojas portuguesas…</div>
+                <div class="mt-2">A pesquisar preços nas lojas parceiras…</div>
             </td>
         </tr>
     `;
@@ -173,38 +259,172 @@ document.addEventListener("DOMContentLoaded", async () => {
     const badgeEl = document.getElementById('promoBadge');
     if (oldEl) oldEl.style.display = 'none';
     if (badgeEl) badgeEl.style.display = 'none';
-    document.getElementById('priceSavings').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> A confirmar nas lojas…';
+    document.getElementById('priceSavings').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> A pesquisar…';
 
-    // Desabilitar carrinho até termos preço fiável
+    // Desabilitar carrinho até termos o carregamento inicial
     const cartBtnInit = document.getElementById('addToCartBtn');
     if (cartBtnInit) {
         cartBtnInit.disabled = true;
         cartBtnInit.style.opacity = '0.5';
     }
 
-    // Buscar preços reais das outras lojas via API (apenas ofertas validadas)
     try {
-        const res = await (window.fetchWithTimeout || fetch)(`/api/products/compare?q=${encodeURIComponent(data.name)}`);
+        // Pedido rápido (fast=true) com timeout de 15 segundos
+        const res = await (window.fetchWithTimeout || fetch)(`/api/products/compare?q=${encodeURIComponent(data.name)}&fast=true`, {}, 15000);
         const compareData = await res.json();
-        const validatedShops = compareData.shops || [];
+        const initialShops = compareData.shops || [];
 
         // Remover linha de loading
         const loadingEl = document.getElementById('loading-row');
         if (loadingEl) loadingEl.remove();
 
-        if (validatedShops.length > 0) {
-            // Restaurar opacidade do € e renderizar
+        if (initialShops.length > 0) {
+            // Restaurar opacidade do € e renderizar o inicial
             document.getElementById('priceCurrency').style.opacity = '';
-            renderComparisonTable(validatedShops);
-            data.shops = validatedShops;
-            data.minPrice = validatedShops.slice().sort((a,b) => parseFloat(a.price) - parseFloat(b.price))[0].price;
-            localStorage.setItem('selectedProduct', JSON.stringify(data));
-            // Reativar botão de carrinho
+            
+            // Inicializar status de todas as lojas para "verifying"
+            currentShops = initialShops;
+            currentShops.forEach(shop => {
+                verifyingStores.add(shop.name);
+                storeStatus.set(shop.name, 'verifying');
+            });
+
+            // Inserir banner superior de status dinamicamente
+            const tableResponsive = document.querySelector('.comparison .table-responsive');
+            let statusBanner = document.getElementById('livePriceStatusBanner');
+            if (!statusBanner && tableResponsive) {
+                statusBanner = document.createElement('div');
+                statusBanner.id = 'livePriceStatusBanner';
+                statusBanner.className = 'alert alert-info py-2 px-3 mb-3 d-flex align-items-center justify-content-between';
+                statusBanner.style.cssText = 'border-radius: 8px; font-size: 13px; background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-family: inherit; margin: 15px 0 10px 0;';
+                statusBanner.innerHTML = `
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-circle-notch fa-spin text-success" id="bannerSpinner" style="margin-right: 5px;"></i>
+                        <span id="bannerText">A confirmar preços reais em tempo real com as lojas (${verifyingStores.size} restantes)...</span>
+                    </div>
+                    <span class="badge bg-success text-white px-2 py-1" id="bannerBadge" style="font-size: 10px; border-radius: 4px;">VERIFICAÇÃO ATIVA</span>
+                `;
+                tableResponsive.parentNode.insertBefore(statusBanner, tableResponsive);
+            }
+
+            renderComparisonTable(currentShops);
+
+            // Inserir a legenda da tabela de preços se não existir
+            let legendRow = document.getElementById('livePriceLegendRow');
+            const disclaimer = document.getElementById('priceDisclaimer');
+            if (!legendRow && disclaimer) {
+                legendRow = document.createElement('div');
+                legendRow.id = 'livePriceLegendRow';
+                legendRow.className = 'd-flex flex-wrap gap-3 justify-content-start py-2 px-4 border-top';
+                legendRow.style.cssText = 'font-size: 11px; background: #fafafa; color: #666; border-color: #eee;';
+                legendRow.innerHTML = `
+                    <div class="d-flex align-items-center gap-1" style="margin-right: 15px;">
+                        <i class="fa-solid fa-circle-check text-success"></i>
+                        <span>Preço verificado em tempo real</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-1" style="margin-right: 15px;">
+                        <i class="fa-solid fa-circle-xmark" style="color: #d97706;"></i>
+                        <span>Preço de referência (não verificado live)</span>
+                    </div>
+                    <div id="legendVerifyingItem" class="d-flex align-items-center gap-1">
+                        <i class="fa-solid fa-circle-notch fa-spin text-muted"></i>
+                        <span>A verificar...</span>
+                    </div>
+                `;
+                disclaimer.parentNode.insertBefore(legendRow, disclaimer);
+            }
+
+            // Reativar botão de carrinho com preço inicial do Serper (fallback ativo)
             const cartBtnEnable = document.getElementById('addToCartBtn');
             if (cartBtnEnable) {
                 cartBtnEnable.disabled = false;
                 cartBtnEnable.style.opacity = '';
             }
+
+            // Guardar dados iniciais no localStorage
+            data.shops = currentShops;
+            const initialSorted = sortShops(currentShops);
+            data.minPrice = initialSorted.length ? initialSorted[0].price : '0.00';
+            localStorage.setItem('selectedProduct', JSON.stringify(data));
+
+            // Disparar chamadas assíncronas para atualizar os preços em background
+            currentShops.forEach(async (shop) => {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 65000); // 65s timeout no frontend
+                
+                try {
+                    const liveRes = await fetch(`/api/products/live-price?store=${encodeURIComponent(shop.name)}&link=${encodeURIComponent(shop.link)}`, {
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    
+                    if (liveRes.ok) {
+                        const liveData = await liveRes.json();
+                        if (liveData && liveData.price !== null) {
+                            const oldPrice = parseFloat(shop.price);
+                            const newPrice = parseFloat(liveData.price);
+                            const oldAvailable = shop.available !== false;
+                            const newAvailable = liveData.available !== false;
+
+                            shop.available = newAvailable;
+                            
+                            let didChange = false;
+                            if (Math.abs(oldPrice - newPrice) > 0.01) {
+                                shop.price = liveData.price;
+                                didChange = true;
+                            }
+                            if (oldAvailable !== newAvailable) {
+                                didChange = true;
+                            }
+                            
+                            if (didChange) {
+                                console.log(`[UI] Preço/Estoque de ${shop.name} atualizado: ${oldPrice}€ (Disp: ${oldAvailable}) → ${newPrice}€ (Disp: ${newAvailable})`);
+                                storeStatus.set(shop.name, 'updated');
+                                justUpdatedStore = shop.name;
+                                
+                                verifyingStores.delete(shop.name);
+                                renderComparisonTable(currentShops);
+
+                                // Atualizar localStorage
+                                data.shops = currentShops;
+                                const sorted = sortShops(currentShops);
+                                data.minPrice = sorted.length ? sorted[0].price : '0.00';
+                                localStorage.setItem('selectedProduct', JSON.stringify(data));
+
+                                // Remover animação flash após 1.8s
+                                setTimeout(() => {
+                                    if (justUpdatedStore === shop.name) {
+                                        justUpdatedStore = null;
+                                        renderComparisonTable(currentShops);
+                                    }
+                                }, 1800);
+                            } else {
+                                storeStatus.set(shop.name, 'verified');
+                                verifyingStores.delete(shop.name);
+                                renderComparisonTable(currentShops);
+                            }
+                        } else {
+                            // Se o preço veio null (falha ou timeout)
+                            storeStatus.set(shop.name, 'fallback');
+                            verifyingStores.delete(shop.name);
+                            renderComparisonTable(currentShops);
+                        }
+                    } else {
+                        storeStatus.set(shop.name, 'fallback');
+                        verifyingStores.delete(shop.name);
+                        renderComparisonTable(currentShops);
+                    }
+                } catch (e) {
+                    console.error(`Erro ao verificar live-price para ${shop.name}:`, e);
+                    storeStatus.set(shop.name, 'fallback');
+                    verifyingStores.delete(shop.name);
+                    renderComparisonTable(currentShops);
+                } finally {
+                    clearTimeout(timeoutId);
+                    updateBannerStatus();
+                }
+            });
+
         } else {
             // Nenhuma loja confirmou ter este modelo exato - esconder bloco de preço
             // e mostrar aviso amarelo
