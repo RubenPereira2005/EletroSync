@@ -12,6 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const cheerio = require('cheerio');
 
 const SERPER_API_KEY = process.env.SERPER_API_KEY;
 const SERPER_SEARCH_URL = 'https://google.serper.dev/search';
@@ -315,51 +316,52 @@ function extractPriceFromHtml(html) {
 
 function getCleanProductHtml(html) {
     if (!html) return '';
-    let clean = html;
-    
-    // Remove tudo antes do fim do header se existir
-    const headerEnd = clean.toLowerCase().indexOf('</header>');
-    if (headerEnd !== -1) {
-        clean = clean.slice(headerEnd);
+    try {
+        const $ = cheerio.load(html);
+        
+        // Remove common non-product-content elements
+        $('script, style, iframe, header, footer, noscript, nav').remove();
+        
+        // Remove carousels / recommendations / similar products (cross-selling)
+        $('[class*="carousel"], [class*="slider"], [class*="recommend"], [class*="sugest"], [class*="similar"], [class*="relacionados"]').remove();
+        $('[id*="carousel"], [id*="slider"], [id*="recommend"], [id*="sugest"], [id*="similar"], [id*="relacionados"]').remove();
+        
+        // Remove reviews / opinions / comments / Q&A
+        $('[class*="review"], [class*="opinion"], [class*="comentar"], [class*="avaliacao"], [class*="rating"], [class*="perguntas"]').remove();
+        $('[id*="review"], [id*="opinion"], [id*="comentar"], [id*="avaliacao"], [id*="rating"], [id*="perguntas"]').remove();
+
+        // Remove store pickup / click & collect elements (to avoid false out-of-stock from store-only unavailability)
+        $('[class*="pickup"], [class*="levantamento"], [class*="clickcollect"]').remove();
+        $('[id*="pickup"], [id*="levantamento"], [id*="clickcollect"]').remove();
+
+        return $.html();
+    } catch (e) {
+        console.error('[getCleanProductHtml] erro com cheerio:', e.message);
+        // Fallback para limpeza simples via string/regex
+        let clean = html;
+        const headerEnd = clean.toLowerCase().indexOf('</header>');
+        if (headerEnd !== -1) clean = clean.slice(headerEnd);
+        const footerStart = clean.toLowerCase().indexOf('<footer');
+        if (footerStart !== -1) clean = clean.slice(0, footerStart);
+        clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+        clean = clean.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+        return clean;
     }
-    
-    // Remove tudo após o início do footer se existir
-    const footerStart = clean.toLowerCase().indexOf('<footer');
-    if (footerStart !== -1) {
-        clean = clean.slice(0, footerStart);
-    }
-    
-    // Remover scripts e styles para evitar falsos positivos de scripts de analytics ou CSS
-    clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    clean = clean.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
-    
-    return clean;
 }
 
 function checkAvailabilityFromHtml(storeKey, html) {
     if (!html) return true;
 
-    // 1. Limpar o HTML para focar apenas na área de produto (excluindo header, footer e scripts)
+    // 1. Limpar o HTML para focar apenas na área de produto (excluindo header, footer, scripts e carrosséis)
     const cleanHtml = getCleanProductHtml(html);
     const htmlLower = cleanHtml.toLowerCase();
 
-    // 2. Confirmação Positiva do Botão de Compra (Evita falsos positivos de stock explicativos ou rodapés)
-    if (storeKey === 'radio popular' && htmlLower.includes('adicionar ao carrinho')) {
-        return true;
-    }
-    if (storeKey === 'worten' && htmlLower.includes('adicionar ao carrinho')) {
-        return true;
-    }
-    if (storeKey === 'fnac' && htmlLower.includes('adicionar ao cesto')) {
-        return true;
-    }
-
-    // 3. Verificação Standard Schema.org OutOfStock
-    if (/schema\.org\/OutOfStock/i.test(htmlLower) || /schema\.org\/OutOfStore/i.test(htmlLower)) {
+    // 2. Verificação Standard Schema.org OutOfStock / OutOfStore
+    if (/schema\.org\/OutOfStock/i.test(htmlLower) || /schema\.org\/OutOfStore/i.test(htmlLower) || /schema\.org\/InStoreOnly/i.test(htmlLower)) {
         return false;
     }
 
-    // 4. Verificação de tags específicas do Open Graph de stock
+    // 3. Verificação de tags específicas do Open Graph de stock
     if (/<meta[^>]+property=["']og:availability["'][^>]+content=["'](instock|oos|out of stock|esgotado|indisponivel)["']/i.test(cleanHtml)) {
         const match = cleanHtml.match(/<meta[^>]+property=["']og:availability["'][^>]+content=["']([^"']+)["']/i);
         if (match) {
@@ -370,13 +372,20 @@ function checkAvailabilityFromHtml(storeKey, html) {
         }
     }
 
-    // 5. Fallbacks textuais específicos para cada loja na secção limpa
+    // 4. Fallbacks textuais específicos para cada loja na secção limpa (Negativos primeiro!)
     if (storeKey === 'fnac') {
         if (htmlLower.includes('produto indisponível') || 
             htmlLower.includes('indisponível online') || 
             htmlLower.includes('esgotado temporariamente') ||
             htmlLower.includes('este produto já não se encontra disponível') ||
-            htmlLower.includes('indisponivel online')) {
+            htmlLower.includes('indisponivel online') ||
+            htmlLower.includes('stock esgotado') ||
+            htmlLower.includes('esgotado em fnac.pt') ||
+            htmlLower.includes('indisponível em loja') ||
+            htmlLower.includes('indisponivel em loja') ||
+            htmlLower.includes('produto esgotado') ||
+            htmlLower.includes('artigo indisponível') ||
+            htmlLower.includes('artigo indisponivel')) {
             return false;
         }
     } else if (storeKey === 'worten') {
@@ -384,24 +393,43 @@ function checkAvailabilityFromHtml(storeKey, html) {
             htmlLower.includes('indisponível para entrega') || 
             htmlLower.includes('temporariamente indisponível') ||
             htmlLower.includes('indisponivel para entrega') ||
-            htmlLower.includes('temporariamente indisponivel')) {
+            htmlLower.includes('temporariamente indisponivel') ||
+            htmlLower.includes('produto esgotado') ||
+            htmlLower.includes('esgotado') ||
+            htmlLower.includes('artigo indisponível') ||
+            htmlLower.includes('artigo indisponivel')) {
             return false;
         }
     } else if (storeKey === 'pc diga') {
         if (htmlLower.includes('esgotado') || 
             htmlLower.includes('sem stock') || 
             htmlLower.includes('artigo indisponível') ||
-            htmlLower.includes('artigo indisponivel')) {
+            htmlLower.includes('artigo indisponivel') ||
+            htmlLower.includes('indisponivel')) {
             return false;
         }
     } else if (storeKey === 'radio popular') {
         if (htmlLower.includes('produto indisponível') || 
             htmlLower.includes('produto indisponivel') || 
             htmlLower.includes('artigo indisponível') ||
+            htmlLower.includes('artigo indisponivel') ||
             htmlLower.includes('sem stock') ||
-            htmlLower.includes('temporariamente indisponível')) {
+            htmlLower.includes('esgotado') ||
+            htmlLower.includes('temporariamente indisponível') ||
+            htmlLower.includes('temporariamente indisponivel')) {
             return false;
         }
+    }
+
+    // 5. Confirmação Positiva do Botão de Compra (Se não deu negativo, confirma que botão existe)
+    if (storeKey === 'radio popular' && htmlLower.includes('adicionar ao carrinho')) {
+        return true;
+    }
+    if (storeKey === 'worten' && htmlLower.includes('adicionar ao carrinho')) {
+        return true;
+    }
+    if (storeKey === 'fnac' && htmlLower.includes('adicionar ao cesto')) {
+        return true;
     }
 
     return true;
