@@ -1,23 +1,36 @@
-# EletroSync
+# ⚡ EletroSync
 
-Comparador de preços de eletrónica em Portugal. Compara em tempo real as ofertas
-da **Worten**, **FNAC**, **Rádio Popular** e **PC Diga** para o mesmo produto.
+![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)
+![Express.js](https://img.shields.io/badge/Express.js-404D59?style=for-the-badge)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-563D7C?style=for-the-badge&logo=bootstrap&logoColor=white)
 
-🌐 **Produção:** https://eletrosync.onrender.com
+> Comparador de preços de eletrónica em Portugal. Compara em tempo real as ofertas da **Worten**, **FNAC**, **Rádio Popular** e **PC Diga** para o mesmo produto.
+
+🌐 **Em Produção:** [eletrosync.onrender.com](https://eletrosync.onrender.com)
 
 ---
 
-## Stack
+## ✨ Funcionalidades Principais
+
+- **Comparação em Tempo Real:** Obtém sempre o melhor preço do mercado através da Serper API (Google Shopping).
+- **Sistema de Contas:** Autenticação segura de utilizadores gerida pelo Supabase.
+- **Área Pessoal:** Adiciona produtos aos teus Favoritos ou ao Carrinho de Compras.
+- **Alta Performance:** Sistema de *cache* inteligente para evitar rate limits e carregar dados instantaneamente.
+
+---
+
+## 🛠️ Stack
 
 - **Backend:** Node.js + Express
 - **Frontend:** HTML/CSS/JS vanilla + Bootstrap 5
-- **Base de dados / Auth:** Supabase (PostgreSQL + Row Level Security)
-- **Fonte de preços:** Serper API (Google Shopping)
+- **Base de Dados / Auth:** Supabase (PostgreSQL + Row Level Security)
+- **Fonte de Preços:** Serper API
 - **Hosting:** Render.com
 
 ---
 
-## Setup local
+## 🚀 Setup Local
 
 ### 1. Pré-requisitos
 
@@ -28,10 +41,9 @@ da **Worten**, **FNAC**, **Rádio Popular** e **PC Diga** para o mesmo produto.
 ### 2. Instalar dependências
 
 ```bash
-git clone https://github.com/RubenPereira2005/EletroSync.git
+git clone [https://github.com/RubenPereira2005/EletroSync.git](https://github.com/RubenPereira2005/EletroSync.git)
 cd EletroSync
 npm install
-```
 
 ### 3. Configurar variáveis de ambiente
 
